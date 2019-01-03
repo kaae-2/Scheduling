@@ -1,4 +1,6 @@
-const { app, BrowserWindow } = require('electron')
+const electron = require('electron')
+
+const { app, BrowserWindow } = electron
 
 function createWindow () {
   // Create the browser window.

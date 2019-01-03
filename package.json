@@ -8,9 +8,10 @@
   },
   "author": "Frederik Kirk",
   "license": "MIT",
-  "dependencies": {},
+  "dependencies": {
+    "electron": "^4.0.0"
+  },
   "devDependencies": {
-    "electron": "^4.0.0",
     "electron-packager": "^13.0.1"
   }
 }
