@@ -1,0 +1,15 @@
+{
+  "name": "scheduling_frontend",
+  "version": "1.0.0",
+  "description": "A front end for scheduling programme",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "author": "Frederik Kirk",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {
+    "electron": "^4.0.0"
+}
+}
