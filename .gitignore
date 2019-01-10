@@ -38,3 +38,4 @@ Thumbs.db
 
 # Folders
 /node_modules/
+package-lock.json
