@@ -1,7 +1,7 @@
 const electron = require("electron");
 
 const path = require("path");
-const our = require("url");
+const url = require("url");
 
 const { app, BrowserWindow } = electron;
 
@@ -9,7 +9,7 @@ let mainWindow;
 
 function createWindow() {
   // Create the browser window.
-  mainWindow = new BrowserWindow({ width: 800, height: 600 });
+  mainWindow = new BrowserWindow({ width: 1600, height: 1000 });
 
   // and load the index.html of the app.
   mainWindow.loadURL(
@@ -20,7 +20,7 @@ function createWindow() {
     })
   );
 
-  mainWindow.webContents.openDevTools();
+  // mainWindow.webContents.openDevTools();
   mainWindow.on("closed", () => {
     mainWindow = null;
   });
