@@ -74,7 +74,7 @@ if __name__ == '__main__':
     character_df = excel['Characters']
     restaurant_df = excel['Restaurants']
     scene_df = excel['Scenes']
-    #actor_df.to_sql(["ACT_NAME", "ID"], con=db)
+    
 
     
     
