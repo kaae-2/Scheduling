@@ -1,7 +1,10 @@
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
+import pandas as pd
 import os
+
+
 
 # init app
 
@@ -63,4 +66,15 @@ class Roles(db.Model):
 
 # Create / overwrite Database
 if __name__ == '__main__':
-    db.create_all()
+    # db.create_all()
+    filepath = os.path.join(basedir, "assets/data/KORSBAEK_EXCELTEMPLATE_v2.xlsx")
+    
+    excel = pd.read_excel(filepath, sheet_name=['Actors', 'Characters', 'Restaurants', 'Scenes'])
+    actor_df = excel['Actors']
+    character_df = excel['Characters']
+    restaurant_df = excel['Restaurants']
+    scene_df = excel['Scenes']
+    #actor_df.to_sql(["ACT_NAME", "ID"], con=db)
+
+    
+    
