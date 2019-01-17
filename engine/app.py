@@ -1,9 +1,8 @@
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
-from flask_marshmallow import Marshmallow
 import pandas as pd
 import os
-
+import sqlite3
 
 
 # init app
@@ -64,9 +63,74 @@ class Roles(db.Model):
     role_short_name = db.Column(db.String(), unique=True)
 
 
+def setup_roles(cursor, df):
+    try:
+        # print(list(df))
+        for char in df.iterrows():
+            _, data = char
+            data = list(data[0:2])
+            sqlcmd =  """INSERT INTO roles (role_full_name, role_short_name)
+                    VALUES
+                    ( ?, ?);"""
+            cursor.execute(sqlcmd, data)
+    except sqlite3.IntegrityError:
+        print('Exiting Role function')
+        return
+    print("Successfully added roles to db")
+
+
+def setup_actors(cursor, df):
+    try:
+        # print(list(df))
+        for char in df.iterrows():
+            _, data = char
+            data = list(data[0:2])
+            sqlcmd =  """INSERT INTO actors (actor_full_name, actor_initials)
+                    VALUES
+                    ( ?, ?);"""
+            cursor.execute(sqlcmd, data)
+    except sqlite3.IntegrityError:
+        print('Exiting Actor function')
+        return
+    print("Successfully added actors to db")
+
+
+def setup_restaurants(cursor, df):
+    try:
+        # print(list(df))
+        for char in df.iterrows():
+            _, data = char
+            data = list(data[0:3])
+            sqlcmd =  """INSERT INTO restaurants (restaurant_full_name, restaurant_short_name, restaurant_seating)
+                    VALUES
+                    ( ?, ?, ?);"""
+            cursor.execute(sqlcmd, data)
+    except sqlite3.IntegrityError:
+        print('Exiting Restaurant function')
+        return
+    print("Successfully added restaurants to db")
+
+def setup_scenes(cursor, df):
+    try:
+        # print(list(df))
+        for char in df.iterrows():
+            _, data = char
+            data = list(data[0:2])
+            sqlcmd =  """INSERT INTO scenes (scene_full_name, scene_short_name)
+                    VALUES
+                    ( ?, ?);"""
+            cursor.execute(sqlcmd, data)
+    except sqlite3.IntegrityError :
+        print('Exiting Scene function')
+        return
+    print("Successfully added scenes to db")
+
+
+
+
 # Create / overwrite Database
 if __name__ == '__main__':
-    # db.create_all()
+    db.create_all()
     filepath = os.path.join(basedir, "assets/data/KORSBAEK_EXCELTEMPLATE_v2.xlsx")
     
     excel = pd.read_excel(filepath, sheet_name=['Actors', 'Characters', 'Restaurants', 'Scenes'])
@@ -74,6 +138,49 @@ if __name__ == '__main__':
     character_df = excel['Characters']
     restaurant_df = excel['Restaurants']
     scene_df = excel['Scenes']
+
+    print('Connecting to database..')
+    conn = sqlite3.connect('db.sqlite')
+    c = conn.cursor()
+    print('Success!')
+    
+    
+    """Add data to DB""" 
+    c.execute("""BEGIN TRANSACTION""")
+    setup_roles(c, character_df)
+    setup_actors(c, actor_df)
+    setup_restaurants(c, restaurant_df)
+    setup_scenes(c, scene_df)
+    c.execute("""COMMIT TRANSACTION""")
+    
+    df1 = actor_df
+    print(list(df1))
+    for _, row in df1.iterrows():
+        row = list(row)
+        row2 = [x for x in list(df1) if row[list(df1).index(x)] == 1]
+        for i in row2:
+            a = [None, None]
+            initials = row[1]
+            sqlcmd = """INSERT INTO actor_roles (actor_id, role_id)
+            values (?, ?);"""
+            sqlfetch = """select id from actors where actor_initials = ?"""
+            c.execute(sqlfetch, [initials])
+            a[0] = list(c.fetchone())[0]
+
+            sqlfetch = """select id from roles where role_short_name = ?"""
+            c.execute(sqlfetch, [i])
+            a[1] = list(c.fetchone())[0]
+            print(a)
+            c.execute(sqlcmd,a)
+            conn.commit()
+
+
+    print('Closing Connection')
+    conn.close()
+
+
+
+
     
 
     
