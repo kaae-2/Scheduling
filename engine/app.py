@@ -6,10 +6,8 @@ import sqlite3
 
 
 # init app
-
 app = Flask(__name__)
 basedir = os.path.abspath(os.path.dirname(__file__))
-
 # Database
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'db.sqlite')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -172,14 +170,14 @@ def setup_srr(cursor, df):
                     a[1] = list(c.fetchone())[0]
                     cursor.execute(sqlcmd,a)
                     # conn.commit()
-                except Exception as e:
+                except:
                     try:
                         sqlfetch = """select id from roles where role_short_name = ?"""
                         cursor.execute(sqlfetch, [i])
                         b[1] = list(c.fetchone())[0]
                         cursor.execute(sqlcmd2, b)
                         # conn.commit()
-                    except TypeError as e:
+                    except:
                         continue
         except sqlite3.IntegrityError:
             continue  
