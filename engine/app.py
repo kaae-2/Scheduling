@@ -22,7 +22,7 @@ actors_roles = db.Table('actor_roles',
 )
 
 restaurants_scenes = db.Table('restaurants_scenes',
-    db.Column('restaurants_id', db.Integer, db.ForeignKey('restaurants.id'), primary_key=True),
+    db.Column('restaurant_id', db.Integer, db.ForeignKey('restaurants.id'), primary_key=True),
     db.Column('scene_id', db.Integer, db.ForeignKey('scenes.id'), primary_key=True)
 )
 
@@ -126,6 +126,63 @@ def setup_scenes(cursor, df):
     print("Successfully added scenes to db")
 
 
+def setup_ar(cursor, df):
+    for _, row in df.iterrows():
+        try:
+            row = list(row)
+            row2 = [x for x in list(df) if row[list(df).index(x)] == 1]
+            for i in row2:
+                a = [None, None]
+                initials = row[1]
+                sqlcmd = """INSERT INTO actor_roles (actor_id, role_id)
+                values (?, ?);"""
+                sqlfetch = """select id from actors where actor_initials = ?"""
+                cursor.execute(sqlfetch, [initials])
+                a[0] = list(c.fetchone())[0]
+
+                sqlfetch = """select id from roles where role_short_name = ?"""
+                cursor.execute(sqlfetch, [i])
+                a[1] = list(c.fetchone())[0]
+                c.execute(sqlcmd,a)
+        except sqlite3.IntegrityError:
+            print('Exiting actor_roles function')
+            return
+        print("Successfully added actor_roles interactions to db")
+
+def setup_srr(cursor, df):
+    for _, row in df.iterrows():
+        try:
+            row = list(row)
+            row2 = [x for x in list(df) if row[list(df).index(x)] == 1]
+            for i in row2:
+                a = [None, None]
+                b = [None, None]
+                initials = row[1]
+                sqlcmd = """INSERT INTO restaurants_scenes (scene_id, restaurant_id)
+                values (?, ?);"""
+                sqlcmd2 = """INSERT INTO roles_scenes (scene_id, role_id)
+                values (?, ?);"""
+                sqlfetch = """select id from scenes where scene_short_name = ?"""
+                cursor.execute(sqlfetch, [initials])
+                a[0] = list(c.fetchone())[0]
+                b[0] = a[0]
+                try:
+                    sqlfetch = """select id from restaurants where restaurant_short_name = ?"""
+                    cursor.execute(sqlfetch, [i])
+                    a[1] = list(c.fetchone())[0]
+                    cursor.execute(sqlcmd,a)
+                    # conn.commit()
+                except Exception as e:
+                    try:
+                        sqlfetch = """select id from roles where role_short_name = ?"""
+                        cursor.execute(sqlfetch, [i])
+                        b[1] = list(c.fetchone())[0]
+                        cursor.execute(sqlcmd2, b)
+                        # conn.commit()
+                    except TypeError as e:
+                        continue
+        except sqlite3.IntegrityError:
+            continue  
 
 
 # Create / overwrite Database
@@ -151,28 +208,11 @@ if __name__ == '__main__':
     setup_actors(c, actor_df)
     setup_restaurants(c, restaurant_df)
     setup_scenes(c, scene_df)
+    setup_srr(c, scene_df)
+    setup_ar(c, actor_df)
     c.execute("""COMMIT TRANSACTION""")
-    
-    df1 = actor_df
-    print(list(df1))
-    for _, row in df1.iterrows():
-        row = list(row)
-        row2 = [x for x in list(df1) if row[list(df1).index(x)] == 1]
-        for i in row2:
-            a = [None, None]
-            initials = row[1]
-            sqlcmd = """INSERT INTO actor_roles (actor_id, role_id)
-            values (?, ?);"""
-            sqlfetch = """select id from actors where actor_initials = ?"""
-            c.execute(sqlfetch, [initials])
-            a[0] = list(c.fetchone())[0]
-
-            sqlfetch = """select id from roles where role_short_name = ?"""
-            c.execute(sqlfetch, [i])
-            a[1] = list(c.fetchone())[0]
-            print(a)
-            c.execute(sqlcmd,a)
-            conn.commit()
+    conn.commit()
+    print('Done')
 
 
     print('Closing Connection')
