@@ -26,36 +26,38 @@ def prepare_input_for_model(shift):
     roles_df = get_all_roles()
     scenes_df = get_all_scenes()
     all_playable_scene_df, valid_role_list = get_valid_scenes(scenes_df, roles_df, actor_df)
-    playable_scene_ids = get_playable_scene_ids(all_playable_scene_df, shift, valid_role_list, actor_df)
-    #print(playable_scene_ids)
+    playable_scene_dict = get_playable_scene_ids(all_playable_scene_df, shift, valid_role_list, actor_df)
+    print(playable_scene_dict)
 
 
 def get_playable_scene_ids(vsdf, shift, valid_role_list, actor_df):
         time_slices = get_time_slices(shift)
         combination_of_actors_on_shift = get_combination_of_actors_on_shift(shift, time_slices, actor_df)
-        # print(valid_role_list)
+        valid_scenes = {}
         for i, combination in enumerate(combination_of_actors_on_shift):
                 shift_roles = valid_role_list[valid_role_list.index.isin(combination)]
                 valid_shift_roles = get_valid_role_combinations(shift_roles)
                 valid_scene_ids = ()
+                valid_scene_dict = {}
                 for scene_id, row in vsdf.iteritems():
                         for role_combination in valid_shift_roles:
                                 if all(a in role_combination for a in row):
-                                        #print(scene_id, row, role_combination)
                                         valid_scene_ids = valid_scene_ids + (scene_id,)
                                         role_dict = {}
                                         for role in row:
                                                 role_dict[role] = tuple([actor_id[0] for actor_id in shift_roles.iteritems() if role in actor_id[1]])
-                                        print(role_dict)
-                                        #print(row, shift_roles)
+                                        role_dict = get_role_dict_combinations(role_dict)
+                                        valid_scene_dict[scene_id] = role_dict
                                         break
+                valid_scenes[time_slices[i]] = valid_scene_dict                                                          
+        return valid_scenes
 
-                print(time_slices[i], valid_scene_ids)
-                
-                        
-                        
-        return __name__
-                
+
+def get_role_dict_combinations(rdicts):
+        keys = rdicts.keys()
+        values = (rdicts[key] for key in keys)
+        combinations = tuple([dict(zip(keys, combination)) for combination in itertools.product(*values) if len(combination) == len(set(combination))])
+        return combinations           
 
 def get_combination_of_actors_on_shift(shift, time_slices, actor_df):
         actors_on_shifts = []
