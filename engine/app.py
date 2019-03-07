@@ -5,55 +5,75 @@ import sqlite3
 import json
 import itertools
 import datetime as dt
-
-test_shift = {
-        "increment": dt.timedelta(minutes=15),
-    "shifts": 
-    {"TK": {"start":"12:00",
-            "end":"21:00"},
-    "AH": {"start":"13:00",
-            "end":"21:00"},
-    "PA": {"start":"13:00",
-            "end":"19:00"},
-    "SS": {"start":"13:00",
-            "end":"21:00"},
-    "AU": {"start":"12:00",
-            "end":"21:00"},
-    "DS": {"start":"12:00",
-            "end":"19:00"},}
-    }
+from constraint import *
 
 
 def prepare_input_for_model(shift):
-    actor_df = get_actor_df(shift["shifts"])
-    roles_df = get_all_roles()
-    scenes_df = get_all_scenes()
-    all_playable_scene_df, valid_role_list = get_valid_scenes(scenes_df, roles_df, actor_df)
-    playable_scene_dict = get_playable_scene_ids(all_playable_scene_df, shift["shifts"], valid_role_list, actor_df)
-    #print(playable_scene_dict)
-    input_df = transform_scene_dict_to_df(playable_scene_dict, shift['increment'])
+        actor_df = get_actor_df(shift["shifts"])
+        roles_df = get_all_roles()
+        scenes_df = get_all_scenes()
+        all_playable_scene_df, valid_role_list = get_valid_scenes(scenes_df, roles_df, actor_df)
+        playable_scene_dict, time_slices = get_playable_scene_ids(all_playable_scene_df, shift["shifts"], valid_role_list, actor_df)
+        input_df = transform_scene_dict_to_df(playable_scene_dict)
+        input_df = add_increment_data_to_df(input_df, time_slices, shift["increment"])
+        #constraint_satisfaction_input = create_constraint_satisfaction_input(input_df)
+        problem_class = ConstraintProblem(input_df)
+        constraint_solution = problem_class.getSolution()
+        print(constraint_solution)
 
 
-def transform_scene_dict_to_df(input_dict, increments, columns=['time', 'scene_id', 'role_actor']):
+class ConstraintProblem(Problem):
+        def __init__(self, input_df):
+                super(ConstraintProblem, self).__init__()
+                self.setSolver(MinConflictsSolver())
+                self.mapping_df = input_df
+                self.csp = self.create_constraint_satisfaction_input(input_df)
+                self.initialize_variables()
+                self.set_constraints()
+
+
+        def set_constraints(self):
+                print('CONSTRAINTS ADDED')
+                pass
+        
+        def initialize_variables(self):
+                for _, i in self.csp.iterrows():
+                        self.addVariable(i['VARIABLE'], i['DOMAINS'])
+
+        def create_constraint_satisfaction_input(self, df):
+                all_domains = []
+                for time in sorted(set(df['time'])):
+                        #print(df[df['time']==time].index.tolist())
+                        valid_domains = df[df['time']==time].index.tolist()
+                        all_domains.append([time, valid_domains])
+                output_df = pd.DataFrame(all_domains, columns=['VARIABLE', 'DOMAINS'])
+                return output_df
+        
+
+def add_increment_data_to_df(input_df, time_slices, increments=dt.timedelta(minutes=15)):
+        output_df = pd.DataFrame([], columns=list(input_df))
+        td = dt.datetime.strptime(time_slices[0], '%H:%M')
+        for i, _ in enumerate(time_slices[:-1]):
+                curr_df = input_df[input_df['time'] == time_slices[i]].copy(deep='all')
+                while td <  dt.datetime.strptime(time_slices[i+1], '%H:%M'):
+                        # print(td.time())
+                        curr_df['time'] = str(td.time())[0:5]
+                        td += increments
+                        output_df = output_df.append(curr_df, ignore_index=True)
+                # print("done")
+        #print(sorted(set(output_df['time'])))
+        return output_df
+
+
+def transform_scene_dict_to_df(input_dict, columns=['time', 'scene_id', 'role_actor']):
         df = pd.DataFrame(data=None, columns=columns)
         lst = []
         for time in input_dict:
-                #print(time)
-                #print(input_dict[time])
                 for scene_id in input_dict[time]:
-                        # print(scene_id)
-                        #print(input_dict[time][scene_id])
                         for role_actor in input_dict[time][scene_id]:
                                 row = [time, scene_id, role_actor]
-                                #data = pd.DataFrame([row], columns=columns)
                                 lst.append(row)
-                                #print(data)
-                                #df = df.append(data, ignore_index=True)
-                                #print(role_actor)
-        #print(lst)
         df = pd.DataFrame(lst, columns=columns)
-        print(df)
-
         return df
 
 def get_playable_scene_ids(vsdf, shift, valid_role_list, actor_df):
@@ -76,7 +96,7 @@ def get_playable_scene_ids(vsdf, shift, valid_role_list, actor_df):
                                         valid_scene_dict[scene_id] = role_dict
                                         break
                 valid_scenes[time_slices[i]] = valid_scene_dict                                                          
-        return valid_scenes
+        return valid_scenes, time_slices
 
 
 def get_role_dict_combinations(rdicts):
@@ -165,4 +185,22 @@ def get_actor_df(shift):
         return pd.read_sql(sqlcmd, conn)
 
 if __name__ == '__main__':
-    prepare_input_for_model(test_shift)
+
+        test_shift = {
+        "increment": dt.timedelta(minutes=15),
+        "shifts": 
+        {"TK": {"start":"12:00",
+                "end":"21:00"},
+        "AH": {"start":"13:00",
+                "end":"21:00"},
+        "PA": {"start":"13:00",
+                "end":"19:00"},
+        "SS": {"start":"13:00",
+                "end":"21:00"},
+        "AU": {"start":"12:00",
+                "end":"21:00"},
+        "DS": {"start":"12:00",
+                "end":"19:00"},}
+        }
+
+        prepare_input_for_model(test_shift)
