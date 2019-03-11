@@ -12,22 +12,26 @@ def prepare_input_for_model(shift):
         actor_df = get_actor_df(shift["shifts"])
         roles_df = get_all_roles()
         scenes_df = get_all_scenes()
+        restaurant_df = get_restaurants()
         all_playable_scene_df, valid_role_list = get_valid_scenes(scenes_df, roles_df, actor_df)
-        playable_scene_dict, time_slices = get_playable_scene_ids(all_playable_scene_df, shift["shifts"], valid_role_list, actor_df)
+        playable_scene_dict, time_slices = get_playable_scene_ids(all_playable_scene_df, shift["shifts"], valid_role_list, actor_df, restaurant_df)
         input_df = transform_scene_dict_to_df(playable_scene_dict)
-        input_df = add_increment_data_to_df(input_df, time_slices, shift["increment"])
-        #constraint_satisfaction_input = create_constraint_satisfaction_input(input_df)
-        problem_class = ConstraintProblem(input_df)
+        #input_df = add_increment_data_to_df(input_df, time_slices, increments=shift["increment"]) # not used
+        var = get_time_increment_data(time_slices, increments=shift['increment'])
+        problem_class = ConstraintProblem(input_df, var)
         constraint_solution = problem_class.getSolution()
-        print(constraint_solution)
+        # print(constraint_solution)
+        output_df = combine_solution(constraint_solution, input_df)
+        output_json = format_output(output_df, scene_df, restaurant_df, role_df, actor_df)
+        
 
 
 class ConstraintProblem(Problem):
-        def __init__(self, input_df):
+        def __init__(self, input_df, var):
                 super(ConstraintProblem, self).__init__()
                 self.setSolver(MinConflictsSolver())
                 self.mapping_df = input_df
-                self.csp = self.create_constraint_satisfaction_input(input_df)
+                self.csp = self.create_constraint_satisfaction_input(input_df, var)
                 self.initialize_variables()
                 self.set_constraints()
 
@@ -39,18 +43,54 @@ class ConstraintProblem(Problem):
         def initialize_variables(self):
                 for _, i in self.csp.iterrows():
                         self.addVariable(i['VARIABLE'], i['DOMAINS'])
+        
+        def create_constraint_satisfaction_input(self, df, var):
+                all_domains = []
+                time_slices = sorted(set(df['time']))
+                for time in var:
+                        a = max(x for x in time_slices if x <= time)
+                        valid_domains = df[df['time']==a].index.tolist()
+                        all_domains.append([time, valid_domains])
+                output_df = pd.DataFrame(all_domains, columns=['VARIABLE', 'DOMAINS'])
+                return output_df
 
-        def create_constraint_satisfaction_input(self, df):
+        """  def create_constraint_satisfaction_input(self, df):
                 all_domains = []
                 for time in sorted(set(df['time'])):
                         #print(df[df['time']==time].index.tolist())
                         valid_domains = df[df['time']==time].index.tolist()
                         all_domains.append([time, valid_domains])
                 output_df = pd.DataFrame(all_domains, columns=['VARIABLE', 'DOMAINS'])
-                return output_df
-        
+                return output_df """
+
+
+def format_output(output_df, scene_df, restaurant_df, role_df, actor_df):
+        for row in output_df.iterrows():
+                _, data = row
+                print(row)
+
+def combine_solution(solution, input_df):
+        columns=list(input_df)
+        output_lst = []
+        for time in solution:
+                df = input_df.iloc[[solution[time]]]
+                lst = df[[x for x in list(df) if x != 'time']].values[0].tolist()
+                output_lst.append([time] + lst)
+        output_df = pd.DataFrame(output_lst, columns=columns)
+        return output_df
+
+
+
+def get_time_increment_data(time_slices, increments=dt.timedelta(minutes=15)):
+        td = dt.datetime.strptime(time_slices[0], '%H:%M')
+        output = []
+        while td < dt.datetime.strptime(time_slices[-1], '%H:%M'):
+                output.append(str(td.time())[0:5])
+                td += increments           
+        return output
 
 def add_increment_data_to_df(input_df, time_slices, increments=dt.timedelta(minutes=15)):
+        # Unused ad this inflates the number of indices
         output_df = pd.DataFrame([], columns=list(input_df))
         td = dt.datetime.strptime(time_slices[0], '%H:%M')
         for i, _ in enumerate(time_slices[:-1]):
@@ -65,18 +105,19 @@ def add_increment_data_to_df(input_df, time_slices, increments=dt.timedelta(minu
         return output_df
 
 
-def transform_scene_dict_to_df(input_dict, columns=['time', 'scene_id', 'role_actor']):
+def transform_scene_dict_to_df(input_dict, columns=['time', 'scene_id', 'restaurant_id', 'role_actor']):
         df = pd.DataFrame(data=None, columns=columns)
         lst = []
         for time in input_dict:
                 for scene_id in input_dict[time]:
-                        for role_actor in input_dict[time][scene_id]:
-                                row = [time, scene_id, role_actor]
-                                lst.append(row)
+                        for restaurant_id in input_dict[time][scene_id]:
+                                for role_actor in input_dict[time][scene_id][restaurant_id]:
+                                        row = [time, scene_id, restaurant_id, role_actor]
+                                        lst.append(row)
         df = pd.DataFrame(lst, columns=columns)
         return df
 
-def get_playable_scene_ids(vsdf, shift, valid_role_list, actor_df):
+def get_playable_scene_ids(vsdf, shift, valid_role_list, actor_df, restaurant_df):
         time_slices = get_time_slices(shift)
         combination_of_actors_on_shift = get_combination_of_actors_on_shift(shift, time_slices, actor_df)
         valid_scenes = {}
@@ -86,6 +127,7 @@ def get_playable_scene_ids(vsdf, shift, valid_role_list, actor_df):
                 valid_scene_ids = ()
                 valid_scene_dict = {}
                 for scene_id, row in vsdf.iteritems():
+                        res = (x for x in restaurant_df if scene_id in x)
                         for role_combination in valid_shift_roles:
                                 if all(a in role_combination for a in row):
                                         valid_scene_ids = valid_scene_ids + (scene_id,)
@@ -93,9 +135,17 @@ def get_playable_scene_ids(vsdf, shift, valid_role_list, actor_df):
                                         for role in row:
                                                 role_dict[role] = tuple([actor_id[0] for actor_id in shift_roles.iteritems() if role in actor_id[1]])
                                         role_dict = get_role_dict_combinations(role_dict)
-                                        valid_scene_dict[scene_id] = role_dict
+                                        rest_dict = {}
+                                        for r in res:
+                                                a = restaurant_df[restaurant_df == r].index[0][-1]
+                                                rest_dict[a] = role_dict
+                                        valid_scene_dict[scene_id] = rest_dict
                                         break
-                valid_scenes[time_slices[i]] = valid_scene_dict                                                          
+                valid_scenes[time_slices[i]] = valid_scene_dict           
+        for res in restaurant_df:
+                pass
+                #print(res)  
+                #print(restaurant_df[restaurant_df == res].index[0][-1])                                           
         return valid_scenes, time_slices
 
 
@@ -139,7 +189,14 @@ def get_valid_role_combinations(vr):
                         continue
                 valid_role_combinations.append(combination)
         return valid_role_combinations
-        
+
+def get_restaurants():
+        sqlcmd = """SELECT * from restaurants inner join restaurants_scenes on restaurants.id = restaurants_scenes.restaurant_id"""
+        with sqlite3.connect("db.sqlite") as conn:
+                rs = pd.read_sql(sqlcmd, conn)
+        rs = rs.groupby(["restaurant_full_name", "restaurant_short_name", "restaurant_seating", "restaurant_id"])["scene_id"].apply(tuple)
+        return rs
+            
 
 def find_valid_scenes(vrc, sdf):
         scene_id = tuple(sdf["id"])
