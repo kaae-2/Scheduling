@@ -19,9 +19,9 @@ def prepare_input_for_model(shift):
         var = get_time_increment_data(time_slices, increments=shift['increment'])
         problem_class = ConstraintProblem(input_df, var)
         constraint_solution = problem_class.getSolution()
-        # print(constraint_solution)
         output_df = combine_solution(constraint_solution, input_df)
         output_json = format_output(output_df, scenes_df, restaurant_df, roles_df, actor_df)
+        print(json.dumps(output_json, ensure_ascii=False))
         
 
 
@@ -33,7 +33,6 @@ class ConstraintProblem(Problem):
                 self.csp = self.create_constraint_satisfaction_input(input_df, var)
                 self.initialize_variables()
                 self.set_constraints()
-
 
         def set_constraints(self):
                 print('CONSTRAINTS ADDED')
@@ -55,8 +54,6 @@ class ConstraintProblem(Problem):
 
 
 def format_output(output_df, scenes_df, restaurant_df, roles_df, actor_df):
-        #print(list(output_df))
-        #print(list(actor_df))
         output_json = {}
         for row in output_df.iterrows():
                 _, data = row
@@ -65,8 +62,6 @@ def format_output(output_df, scenes_df, restaurant_df, roles_df, actor_df):
                 scene = scene['scene_full_name'].values[0]
                 restaurant = restaurant_df[restaurant_df['restaurant_id'] == data['restaurant_id']]
                 restaurant = restaurant['restaurant_full_name'].values[0]
-                #role = [key for key in data['role_actor']]
-                #actor = [data['role_actor'][key] for key in data['role_actor']]
                 role_actor = []
                 for key in data['role_actor']:
                         role = roles_df[roles_df['id'] == key]
@@ -74,18 +69,15 @@ def format_output(output_df, scenes_df, restaurant_df, roles_df, actor_df):
                         actor = actor_df[actor_df['id'] == data['role_actor'][key]]
                         actor = actor['actor_full_name'].values[0]
                         role_actor.append([role, actor])
-                #output_json{'time':time, 'scene':scene, 'restaurant':restaurant}
-                output_json[time] = {
-                        'scene':scene, 
-                'restaurant':restaurant, 
-                'role_actor':[{
-                        'role':x[0],
-                        'actor':x[1]}
-                        for x in role_actor
-                        ]}
 
-                #print(time, scene, restaurant, role_actor)
-        print(json.dumps(output_json, ensure_ascii=False))
+                output_json[time] = {
+                        'scene': scene, 
+                        'restaurant': restaurant, 
+                        'role_actor': [{
+                                'role': x[0],
+                                'actor': x[1]
+                                } for x in role_actor
+                                ]}
         return output_json
 
 def combine_solution(solution, input_df):
@@ -97,7 +89,6 @@ def combine_solution(solution, input_df):
                 output_lst.append([time] + lst)
         output_df = pd.DataFrame(output_lst, columns=columns)
         return output_df
-
 
 
 def get_time_increment_data(time_slices, increments=dt.timedelta(minutes=15)):
@@ -164,7 +155,6 @@ def get_combination_of_actors_on_shift(shift, time_slices, actor_df):
                 actors_on_shifts.append(actor_ids_on_shift['id'].values.tolist())
         return actors_on_shifts
                 
-
 def get_valid_scenes(scenes_df, roles_df, actor_df):
         valid_roles = get_valid_roles(roles_df, actor_df)
         valid_role_combinations = get_valid_role_combinations(valid_roles)
