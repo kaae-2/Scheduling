@@ -8,7 +8,7 @@ import datetime as dt
 from constraint import *
 
 
-def prepare_input_for_model(shift):
+def run_model(shift):
         actor_df = get_actor_df(shift["shifts"])
         roles_df = get_all_roles()
         scenes_df = get_all_scenes()
@@ -22,6 +22,7 @@ def prepare_input_for_model(shift):
         output_df = combine_solution(constraint_solution, input_df)
         output_json = format_output(output_df, scenes_df, restaurant_df, roles_df, actor_df)
         print(json.dumps(output_json, ensure_ascii=False))
+        return output_json
         
 
 
@@ -256,4 +257,4 @@ if __name__ == '__main__':
                 "end":"19:00"},}
         }
 
-        prepare_input_for_model(test_shift)
+        output = run_model(test_shift)
