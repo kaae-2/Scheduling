@@ -1,0 +1,23 @@
+{
+  "name": "scheduling",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kaae-2/scheduling.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kaae-2/scheduling/issues"
+  },
+  "homepage": "https://github.com/kaae-2/scheduling#readme",
+  "devDependencies": {
+    "electron": "^4.0.8"
+  }
+}
