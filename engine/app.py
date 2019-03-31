@@ -21,7 +21,6 @@ def run_model(shift):
         constraint_solution = problem_class.getSolution()
         output_df = combine_solution(constraint_solution, input_df)
         output_json = format_output(output_df, scenes_df, restaurant_df, roles_df, actor_df)
-        print(json.dumps(output_json, ensure_ascii=False))
         return output_json
         
 
@@ -254,7 +253,10 @@ if __name__ == '__main__':
         "AU": {"start":"12:00",
                 "end":"21:00"},
         "DS": {"start":"12:00",
-                "end":"19:00"},}
-        }
+                "end":"19:00"},
+        }}
 
         output = run_model(test_shift)
+        #print(json.dumps(output, ensure_ascii=False))
+        for key in output:
+                print(key, output[key])
