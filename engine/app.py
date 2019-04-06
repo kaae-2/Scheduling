@@ -35,7 +35,7 @@ class ConstraintProblem(Problem):
                 self.set_constraints()
 
         def set_constraints(self):
-                print('CONSTRAINTS ADDED')
+                # print('CONSTRAINTS ADDED')
                 pass
         
         def initialize_variables(self):
@@ -238,7 +238,8 @@ def get_actor_df(shift):
         return pd.read_sql(sqlcmd, conn)
 
 if __name__ == '__main__':
-
+        os.chdir(os.path.dirname(sys.argv[0]))
+        
         test_shift = {
         "increment": dt.timedelta(minutes=15),
         "shifts": 
@@ -257,6 +258,9 @@ if __name__ == '__main__':
         }}
 
         output = run_model(test_shift)
+        #sys.stdout.write(output)
         #print(json.dumps(output, ensure_ascii=False))
+        #print(output)
         for key in output:
                 print(key, output[key])
+                #sys.stdoutwrite(key, output[key])

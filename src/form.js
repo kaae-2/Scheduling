@@ -14,19 +14,66 @@ const actors = {
   SS: "Sune"
 };
 
-function runEngine() {
-  var python = require("python-shell");
+const times = [
+  "12:00",
+  "12:15",
+  "12:30",
+  "12:45",
+  "13:00",
+  "13:15",
+  "13:30",
+  "13:45",
+  "14:00",
+  "14:15",
+  "14:30",
+  "14:45",
+  "15:00",
+  "15:15",
+  "15:30",
+  "15:45",
+  "16:00",
+  "16:15",
+  "16:30",
+  "16:45",
+  "17:00",
+  "17:15",
+  "17:30",
+  "17:45",
+  "18:00",
+  "18:15",
+  "18:30",
+  "18:45",
+  "19:00",
+  "19:15",
+  "19:30",
+  "19:45",
+  "20:00",
+  "20:15",
+  "20:30",
+  "20:45",
+  "21:00",
+  "21:15",
+  "21:30",
+  "21:45"
+];
+
+function runEngine(args) {
+  const { PythonShell } = require("python-shell");
+
   var path = require("path");
 
   var options = {
-    scriptPath: path.join(__dirname, "/../../engine/"),
-    pythonPath: "/usr/local/bin/python3"
+    scriptPath: path.join(__dirname, "/engine/"),
+    //pythonPath: "/usr/local/bin/python3",
+    stdin: args
   };
 
-  var face = new python("app.py", options);
-
-  face.end((err, code, message) => {
-    console.log(code);
+  var constraint = new PythonShell("app.py", options);
+  constraint.on("message", message => {
+    console.log(message);
+  });
+  constraint.end((err, code, message) => {
+    console.log("lol");
   });
 }
 
@@ -74,10 +121,10 @@ function addRow() {
 
       // ADD THE BUTTON's 'onclick' EVENT.
       button.setAttribute("onclick", "removeRow(this)");
-
       td.appendChild(button);
     } else if (c == 0) {
       var ele = document.createElement("select");
+      ele.required = true;
       options = "<select>";
       options += "<option></option>";
       for (var key in actors) {
@@ -85,15 +132,17 @@ function addRow() {
       }
       options += "</select>";
       ele.innerHTML = options;
-
       td.appendChild(ele);
     } else {
-      // CREATE AND ADD TEXTBOX IN EACH CELL.
-      var ele = document.createElement("input");
-      ele.setAttribute("type", "time");
-      ele.setAttribute("value", "");
-      ele.setAttribute("step", "900");
-      //ele.setAttribute("placeholder", "12:00 PM");
+      var ele = document.createElement("select");
+      options = "<select>";
+      for (var key in times) {
+        options +=
+          '<option value="' + times[key] + '">' + times[key] + "</option>";
+      }
+      options += "</select>";
+      ele.innerHTML = options;
+      ele.required = true;
       td.appendChild(ele);
     }
   }
@@ -116,23 +165,10 @@ function submit() {
     var actor = myTab.rows[row].cells[0].childNodes[0].value,
       startTime = myTab.rows[row].cells[1].childNodes[0].value,
       endTime = myTab.rows[row].cells[2].childNodes[0].value;
-    /*  for (c = 0; c < myTab.rows[row].cells.length; c++) {
-      // EACH CELL IN A ROW.
-
-      var element = myTab.rows.item(row).cells[c];
-
-      if (element.childNodes[0].getAttribute("type") != "button") {
-        act.push(element.childNodes[0].value);
-      }
-    } 
-    if (act.length > 0) {
-      input[shifts] = act;
-    }*/
     act[actor] = { start: startTime, end: endTime };
   }
 
   input["shifts"] = act;
-  //input["shifts"][String(actor)] = { start: startTime, end: endTime };
 
   console.log(input);
   runEngine(input);
