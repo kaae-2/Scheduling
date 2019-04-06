@@ -163,7 +163,24 @@ function submit() {
   input["increment"] = document.getElementById("increment").value;
   // LOOP THROUGH EACH ROW OF THE TABLE.
   var act = new Object();
+  var duplicates = [];
   for (row = 1; row < myTab.rows.length; row++) {
+    // ERROR CHECKING
+    if (duplicates.includes(myTab.rows[row].cells[0].childNodes[0].value)) {
+      alert(
+        "Please choose distinct actors. No 2 rows can contain the same actor."
+      );
+      return;
+    } else {
+      duplicates.push(myTab.rows[row].cells[0].childNodes[0].value);
+    }
+    for (cell = 0; cell < myTab.rows[row].cells.length - 1; cell++) {
+      if (myTab.rows[row].cells[cell].childNodes[0].value == "") {
+        console.log("lol");
+        alert("Please fill out all rows to run the programme.");
+        return;
+      }
+    }
     var actor = myTab.rows[row].cells[0].childNodes[0].value,
       startTime = myTab.rows[row].cells[1].childNodes[0].value,
       endTime = myTab.rows[row].cells[2].childNodes[0].value;
@@ -171,7 +188,7 @@ function submit() {
   }
 
   input["shifts"] = act;
-
+  console.log(duplicates);
   console.log(input);
-  runEngine(input);
+  //runEngine(input);
 }
