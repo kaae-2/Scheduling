@@ -16,7 +16,7 @@ def run_model(shift):
         all_playable_scene_df, valid_role_list = get_valid_scenes(scenes_df, roles_df, actor_df)
         playable_scene_dict, time_slices = get_playable_scene_ids(all_playable_scene_df, shift["shifts"], valid_role_list, actor_df, restaurant_df)
         input_df = transform_scene_dict_to_df(playable_scene_dict)
-        var = get_time_increment_data(time_slices, increments=shift['increment'])
+        var = get_time_increment_data(time_slices, increment=shift['increment'])
         problem_class = ConstraintProblem(input_df, var)
         constraint_solution = problem_class.getSolution()
         output_df = combine_solution(constraint_solution, input_df)
@@ -91,12 +91,14 @@ def combine_solution(solution, input_df):
         return output_df
 
 
-def get_time_increment_data(time_slices, increments=dt.timedelta(minutes=15)):
+def get_time_increment_data(time_slices, increment="00:15"):
         td = dt.datetime.strptime(time_slices[0], '%H:%M')
         output = []
+        inc = dt.datetime.strptime(increment, "%H:%M")
+        inc = dt.timedelta(minutes=inc.minute)
         while td < dt.datetime.strptime(time_slices[-1], '%H:%M'):
                 output.append(str(td.time())[0:5])
-                td += increments           
+                td += inc          
         return output
 
 
@@ -241,7 +243,7 @@ if __name__ == '__main__':
         os.chdir(os.path.dirname(sys.argv[0]))
         
         test_shift = {
-        "increment": dt.timedelta(minutes=15),
+        "increment": "00:15",
         "shifts": 
         {"TK": {"start":"12:00",
                 "end":"21:00"},
@@ -257,10 +259,16 @@ if __name__ == '__main__':
                 "end":"19:00"},
         }}
 
+        if len(sys.argv) > 1:
+                test_shift = json.loads(sys.argv[1])
+                
+
+
         output = run_model(test_shift)
         #sys.stdout.write(output)
         #print(json.dumps(output, ensure_ascii=False))
         #print(output)
-        for key in output:
-                print(key, output[key])
+        #for key in output:
+        #        print(key, output[key])
                 #sys.stdoutwrite(key, output[key])
+        print(json.dumps(output, ensure_ascii=False))

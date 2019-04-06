@@ -65,15 +65,17 @@ function runEngine(args) {
   var options = {
     scriptPath: path.join(__dirname, "/engine/"),
     //pythonPath: "/usr/local/bin/python3",
-    stdin: args
+    args: JSON.stringify(args)
   };
-
   var constraint = new PythonShell("app.py", options);
+  constraint.send(JSON.stringify(args));
   constraint.on("message", message => {
-    console.log(message);
+    //console.log(message);
+    test = JSON.parse(JSON.parse(JSON.stringify(message)));
   });
   constraint.end((err, code, message) => {
-    console.log("lol");
+    console.log(message);
+    console.log(test);
   });
 }
 
@@ -98,7 +100,7 @@ function createTable() {
   }
 }
 
-// ADD A NEW ROW TO THE TABLE.s
+// ADD A NEW ROW TO THE TABLE.
 function addRow() {
   var empTab = document.getElementById("shiftTable");
 
@@ -110,7 +112,7 @@ function addRow() {
     td = tr.insertCell(c);
 
     if (c == headerArray.length - 1) {
-      // FIRST COLUMN.
+      // LAST COLUMN.
       // ADD A BUTTON.
       var button = document.createElement("input");
 
@@ -158,7 +160,7 @@ function removeRow(oButton) {
 function submit() {
   var myTab = document.getElementById("shiftTable");
   var input = {};
-  input["increments"] = document.getElementById("increments").value;
+  input["increment"] = document.getElementById("increment").value;
   // LOOP THROUGH EACH ROW OF THE TABLE.
   var act = new Object();
   for (row = 1; row < myTab.rows.length; row++) {
