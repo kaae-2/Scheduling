@@ -13,6 +13,8 @@
   "license": "ISC",
   "dependencies": {
     "electron": "^1.7.6",
+    "html2pdf": "0.0.11",
+    "jspdf": "^1.5.3",
     "python-shell": "^1.0.7"
   },
   "devDependencies": {

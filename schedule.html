@@ -18,13 +18,29 @@
 
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     <script src="src/schedule.js"></script>
+    <script src="src/makePDF.js"></script>
     <title>Schedule Output</title>
   </head>
   <body onload="createOutputTable()">
     <div class="container">
-      <h1>Hello</h1>
-      <div class="container" id="outputRes"></div>
-      <div class="container" id="outputAct"></div>
+      <div class="tab">
+        <button class="tablinks" onclick="openTab(event, 'restaurant')">
+          Restaurant View
+        </button>
+        <button class="tablinks" onclick="openTab(event, 'actor')">
+          Actor View
+        </button>
+      </div>
+      <p>Output</p>
+      <button class="btn btn-submit" onClick="makePDF()">
+        Save as pdf
+      </button>
+      <div id="restaurant" class="tabcontent">
+        <div class="container" id="outputRes"></div>
+      </div>
+      <div id="actor" class="tabcontent">
+        <div class="container" id="outputAct"></div>
+      </div>
     </div>
   </body>
 </html>
