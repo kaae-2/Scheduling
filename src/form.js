@@ -136,7 +136,9 @@ function addRow() {
       options += "</select>";
       ele.innerHTML = options;
       td.appendChild(ele);
-    } else {
+      // SET INDEX FOR TESTING
+      ele.selectedIndex = rowCnt;
+    } else if (c == 1) {
       var ele = document.createElement("select");
       options = "<select>";
       for (var key in times) {
@@ -146,6 +148,19 @@ function addRow() {
       options += "</select>";
       ele.innerHTML = options;
       ele.required = true;
+      td.appendChild(ele);
+    } else if (c == 2) {
+      var ele = document.createElement("select");
+      options = "<select>";
+      for (var key in times) {
+        options +=
+          '<option value="' + times[key] + '">' + times[key] + "</option>";
+      }
+      options += "</select>";
+      ele.innerHTML = options;
+      ele.required = true;
+      // SET INDEX FOR TESTING
+      ele.selectedIndex = 20;
       td.appendChild(ele);
     }
   }
