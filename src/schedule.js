@@ -49,8 +49,17 @@ function createOutputTable() {
 
         td.appendChild(ele);
       } else if (output[i]["restaurant"] == resArray[c]) {
-        ele = document.createTextNode(String(output[i]["scene"]));
-        td.appendChild(ele);
+        td.appendChild(document.createTextNode("Scene: " + output[i]["scene"]));
+        for (pair in output[i]["role_actor"]) {
+          td.appendChild(document.createElement("br"));
+          td.appendChild(
+            document.createTextNode(
+              output[i]["role_actor"][pair]["actor"] +
+                ": " +
+                output[i]["role_actor"][pair]["role"]
+            )
+          );
+        }
       }
     }
   }
