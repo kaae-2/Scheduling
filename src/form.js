@@ -71,11 +71,12 @@ function runEngine(args) {
   constraint.send(JSON.stringify(args));
   constraint.on("message", message => {
     //console.log(message);
-    test = JSON.parse(JSON.parse(JSON.stringify(message)));
+    output = JSON.parse(JSON.parse(JSON.stringify(message)));
   });
   constraint.end((err, code, message) => {
-    console.log(message);
-    console.log(test);
+    console.log(output);
+    localStorage.setItem("output", JSON.stringify(output));
+    window.open("schedule.html");
   });
 }
 
@@ -188,7 +189,6 @@ function submit() {
   }
 
   input["shifts"] = act;
-  console.log(duplicates);
   console.log(input);
-  //runEngine(input);
+  runEngine(input);
 }
