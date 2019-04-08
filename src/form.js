@@ -102,7 +102,7 @@ function createTable() {
 
   var div = document.getElementById("cont");
   div.appendChild(shiftTable); // ADD THE TABLE TO YOUR WEB PAGE.
-  for (var i = 0; i < 3; i++) {
+  for (var i = 0; i < 4; i++) {
     addRow();
   }
 }
@@ -154,6 +154,7 @@ function addRow() {
       options += "</select>";
       ele.innerHTML = options;
       ele.required = true;
+      ele.selectedIndex = 1;
       td.appendChild(ele);
     } else if (c == 2) {
       var ele = document.createElement("select");
@@ -166,7 +167,7 @@ function addRow() {
       ele.innerHTML = options;
       ele.required = true;
       // SET INDEX FOR TESTING
-      ele.selectedIndex = 20;
+      ele.selectedIndex = 32;
       td.appendChild(ele);
     }
   }

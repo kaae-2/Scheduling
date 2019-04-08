@@ -14,8 +14,8 @@ margins = {
   width: 522
 };
 
-function makePDF() {
-  html2canvas(document.getElementById("outputRes")).then(canvas => {
+function makePDF(id) {
+  html2canvas(document.getElementById(id)).then(canvas => {
     var contentWidth = canvas.width;
     var contentHeight = canvas.height;
 
@@ -57,7 +57,7 @@ function makePDF() {
       fontSize: 9
     }
   ); */
-    pdf.save("output.pdf");
+    pdf.save(id + ".pdf");
     //pdf.output("dataurlnewwindow");
     //doc.save("output.pdf");
   });
