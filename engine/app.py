@@ -1,3 +1,4 @@
+#-*- coding: utf-8 -*-
 import pandas as pd
 import os
 import sys
@@ -271,4 +272,6 @@ if __name__ == '__main__':
         #for key in output:
         #        print(key, output[key])
                 #sys.stdoutwrite(key, output[key])
+
         print(json.dumps(output, ensure_ascii=False))
+        #print(str(output))

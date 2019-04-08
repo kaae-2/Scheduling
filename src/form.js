@@ -65,16 +65,22 @@ function runEngine(args) {
   var options = {
     scriptPath: path.join(__dirname, "/engine/"),
     //pythonPath: "/usr/local/bin/python3",
+    encoding: "utf8",
+    mode: "json",
     args: JSON.stringify(args)
   };
   var constraint = new PythonShell("app.py", options);
-  constraint.send(JSON.stringify(args));
+  console.log(constraint);
+  //constraint.send(JSON.stringify(args));
   constraint.on("message", message => {
     //console.log(message);
-    output = JSON.parse(JSON.parse(JSON.stringify(message)));
+    output = message;
+    console.log(output);
+    //output = JSON.parse(JSON.parse(JSON.stringify(String(message))));
   });
   constraint.end((err, code, message) => {
     console.log(output);
+
     localStorage.setItem("output", JSON.stringify(output));
     window.open("schedule.html");
   });
