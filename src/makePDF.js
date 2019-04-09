@@ -46,19 +46,7 @@ function makePDF(id) {
         }
       }
     }
-    /*  doc.fromHTML(
-    document.getElementById("outputRes"),
-    margins.left,
-    margins.top,
-    {
-      width: margins.width,
-      elementHandlers: elementHandler,
-      autoSize: true,
-      fontSize: 9
-    }
-  ); */
+
     pdf.save(id + ".pdf");
-    //pdf.output("dataurlnewwindow");
-    //doc.save("output.pdf");
   });
 }

@@ -65,6 +65,8 @@ function runEngine(args) {
   var options = {
     scriptPath: path.join(__dirname, "/engine/"),
     //pythonPath: "/usr/local/bin/python3",
+    pythonPath:
+      "C:/Users/fkir0011/AppData/Local/Programs/Python/Python36-32/python.exe",
     encoding: "utf8",
     mode: "json",
     args: JSON.stringify(args)
@@ -75,12 +77,11 @@ function runEngine(args) {
   constraint.on("message", message => {
     //console.log(message);
     output = message;
-    console.log(output);
+    //console.log(output);
     //output = JSON.parse(JSON.parse(JSON.stringify(String(message))));
   });
   constraint.end((err, code, message) => {
     console.log(output);
-
     localStorage.setItem("output", JSON.stringify(output));
     window.open("schedule.html");
   });

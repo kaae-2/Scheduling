@@ -36,8 +36,10 @@ class ConstraintProblem(Problem):
                 self.set_constraints()
 
         def set_constraints(self):
+                self.addConstraint(AllDifferentConstraint())
                 # print('CONSTRAINTS ADDED')
                 pass
+                
         
         def initialize_variables(self):
                 for _, i in self.csp.iterrows():
@@ -272,6 +274,9 @@ if __name__ == '__main__':
         #for key in output:
         #        print(key, output[key])
                 #sys.stdoutwrite(key, output[key])
+        if len(sys.argv) > 1:
+                print(json.dumps(output))
+        else:
+                print(json.dumps(output, ensure_ascii=False))
 
-        print(json.dumps(output, ensure_ascii=False))
         #print(str(output))
