@@ -72,7 +72,7 @@ function runEngine(args) {
     args: JSON.stringify(args)
   };
   var constraint = new PythonShell("app.py", options);
-  console.log(constraint);
+  //console.log(constraint);
   //constraint.send(JSON.stringify(args));
   constraint.on("message", message => {
     //console.log(message);

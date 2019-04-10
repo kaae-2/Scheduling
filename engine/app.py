@@ -10,50 +10,49 @@ from constraint import *
 
 
 def run_model(shift):
-        actor_df = get_actor_df(shift["shifts"])
-        roles_df = get_all_roles()
-        scenes_df = get_all_scenes()
-        restaurant_df = get_restaurants()
-        all_playable_scene_df, valid_role_list = get_valid_scenes(scenes_df, roles_df, actor_df)
-        playable_scene_dict, time_slices = get_playable_scene_ids(all_playable_scene_df, shift["shifts"], valid_role_list, actor_df, restaurant_df)
-        input_df = transform_scene_dict_to_df(playable_scene_dict)
-        var = get_time_increment_data(time_slices, increment=shift['increment'])
-        problem_class = ConstraintProblem(input_df, var)
-        constraint_solution = problem_class.getSolution()
-        output_df = combine_solution(constraint_solution, input_df)
-        output_json = format_output(output_df, scenes_df, restaurant_df, roles_df, actor_df)
-        return output_json
-        
+    actor_df = get_actor_df(shift["shifts"])
+    roles_df = get_all_roles()
+    scenes_df = get_all_scenes()
+    restaurant_df = get_restaurants()
+    all_playable_scene_df, valid_role_list = get_valid_scenes(scenes_df, roles_df, actor_df)
+    playable_scene_dict, time_slices = get_playable_scene_ids(all_playable_scene_df, shift["shifts"], valid_role_list, actor_df, restaurant_df)
+    input_df = transform_scene_dict_to_df(playable_scene_dict)
+    var = get_time_increment_data(time_slices, increment=shift['increment'])
+    problem_class = ConstraintProblem(input_df, var)
+    constraint_solution = problem_class.getSolution()
+    output_df = combine_solution(constraint_solution, input_df)
+    output_json = format_output(output_df, scenes_df, restaurant_df, roles_df, actor_df)
+    return output_json
+    
 
 
 class ConstraintProblem(Problem):
-        def __init__(self, input_df, var):
-                super(ConstraintProblem, self).__init__()
-                self.setSolver(MinConflictsSolver())
-                self.mapping_df = input_df
-                self.csp = self.create_constraint_satisfaction_input(input_df, var)
-                self.initialize_variables()
-                self.set_constraints()
+    def __init__(self, input_df, var):
+        super(ConstraintProblem, self).__init__()
+        self.setSolver(MinConflictsSolver())
+        self.mapping_df = input_df
+        self.csp = self.create_constraint_satisfaction_input(input_df, var)
+        self.initialize_variables()
+        self.set_constraints() 
 
-        def set_constraints(self):
-                self.addConstraint(AllDifferentConstraint())
-                # print('CONSTRAINTS ADDED')
-                pass
-                
+    def set_constraints(self):
+        self.addConstraint(AllDifferentConstraint())
+        # print('CONSTRAINTS ADDED')
+        pass
+              
+    def initialize_variables(self):
+        for _, i in self.csp.iterrows():
+            self.addVariable(i['VARIABLE'], i['DOMAINS'])
         
-        def initialize_variables(self):
-                for _, i in self.csp.iterrows():
-                        self.addVariable(i['VARIABLE'], i['DOMAINS'])
-        
-        def create_constraint_satisfaction_input(self, df, var):
-                all_domains = []
-                time_slices = sorted(set(df['time']))
-                for time in var:
-                        a = max(x for x in time_slices if x <= time)
-                        valid_domains = df[df['time']==a].index.tolist()
-                        all_domains.append([time, valid_domains])
-                output_df = pd.DataFrame(all_domains, columns=['VARIABLE', 'DOMAINS'])
-                return output_df
+    def create_constraint_satisfaction_input(self, df, var):
+        all_domains = []
+        time_slices = sorted(set(df['time']))
+        for time in var:
+            a = max(x for x in time_slices if x <= time)
+            valid_domains = df[df['time']==a].index.tolist()
+            all_domains.append([time, valid_domains])
+        output_df = pd.DataFrame(all_domains, columns=['VARIABLE', 'DOMAINS'])
+        return output_df
 
 
 def format_output(output_df, scenes_df, restaurant_df, roles_df, actor_df):
@@ -93,7 +92,6 @@ def combine_solution(solution, input_df):
         output_df = pd.DataFrame(output_lst, columns=columns)
         return output_df
 
-
 def get_time_increment_data(time_slices, increment="00:15"):
         td = dt.datetime.strptime(time_slices[0], '%H:%M')
         output = []
@@ -103,7 +101,6 @@ def get_time_increment_data(time_slices, increment="00:15"):
                 output.append(str(td.time())[0:5])
                 td += inc          
         return output
-
 
 def transform_scene_dict_to_df(input_dict, columns=['time', 'scene_id', 'restaurant_id', 'role_actor']):
         df = pd.DataFrame(data=None, columns=columns)
@@ -144,7 +141,6 @@ def get_playable_scene_ids(vsdf, shift, valid_role_list, actor_df, restaurant_df
                                         break
                 valid_scenes[time_slices[i]] = valid_scene_dict                                                 
         return valid_scenes, time_slices
-
 
 def get_role_dict_combinations(rdicts):
         keys = rdicts.keys()
@@ -196,8 +192,7 @@ def get_restaurants():
                 "restaurant_seating",
                 "restaurant_id"
                 ])["scene_id"].apply(tuple).reset_index(name='scenes')
-        return rs
-            
+        return rs            
 
 def find_valid_scenes(vrc, sdf):
         scene_id = tuple(sdf["id"])
@@ -218,7 +213,6 @@ def find_valid_scenes(vrc, sdf):
         playable_scene_df = rs[rs.index.isin(playable_scene_ids)]
         return playable_scene_df
         
-
 def get_all_scenes():
     with sqlite3.connect("db.sqlite") as conn:
         sqlcmd = """ SELECT * from scenes"""
@@ -247,6 +241,12 @@ if __name__ == '__main__':
         
         test_shift = {
         "increment": "00:15",
+        "tours": ["14:30", "15:30", "16:30"],
+        "break_time": {"start": "16:00",
+                        "end": "16:25"},
+        "meal_times": {"KAT": ["14:00"],
+                        "LAU": ["14:00"],
+                        "VAR": ["12:00", "18:30"]},
         "shifts": 
         {"TK": {"start":"12:00",
                 "end":"21:00"},
