@@ -13,12 +13,12 @@ def run_model(shift):
     actor_df = get_actor_df(shift["shifts"])
     roles_df = get_all_roles()
     scenes_df = get_all_scenes()
-    restaurant_df = get_restaurants()
+    restaurant_df = get_restaurants(shift["bookings"])
     all_playable_scene_df, valid_role_list = get_valid_scenes(scenes_df, roles_df, actor_df)
     playable_scene_dict, time_slices = get_playable_scene_ids(all_playable_scene_df, shift["shifts"], valid_role_list, actor_df, restaurant_df)
     input_df = transform_scene_dict_to_df(playable_scene_dict)
-    var = get_time_increment_data(time_slices, increment=shift['increment'])
-    problem_class = ConstraintProblem(input_df, var)
+    time_increments = get_time_increments(time_slices, increment=shift['increment'])
+    problem_class = ConstraintProblem(input_df, time_increments, shift["bookings"])
     constraint_solution = problem_class.getSolution()
     output_df = combine_solution(constraint_solution, input_df)
     output_json = format_output(output_df, scenes_df, restaurant_df, roles_df, actor_df)
@@ -27,16 +27,17 @@ def run_model(shift):
 
 
 class ConstraintProblem(Problem):
-    def __init__(self, input_df, var):
+    def __init__(self, input_df, time_increments, bookings):
         super(ConstraintProblem, self).__init__()
         self.setSolver(MinConflictsSolver())
         self.mapping_df = input_df
-        self.csp = self.create_constraint_satisfaction_input(input_df, var)
+        self.csp = self.create_constraint_satisfaction_input(input_df, time_increments, bookings)
         self.initialize_variables()
         self.set_constraints() 
 
     def set_constraints(self):
         self.addConstraint(AllDifferentConstraint())
+        self.set_relational_constraints()
         # print('CONSTRAINTS ADDED')
         pass
               
@@ -44,15 +45,54 @@ class ConstraintProblem(Problem):
         for _, i in self.csp.iterrows():
             self.addVariable(i['VARIABLE'], i['DOMAINS'])
         
-    def create_constraint_satisfaction_input(self, df, var):
+    def create_constraint_satisfaction_input(self, df, time_increments, bookings):
         all_domains = []
         time_slices = sorted(set(df['time']))
-        for time in var:
+        for time in time_increments:
             a = max(x for x in time_slices if x <= time)
             valid_domains = df[df['time']==a].index.tolist()
+
             all_domains.append([time, valid_domains])
         output_df = pd.DataFrame(all_domains, columns=['VARIABLE', 'DOMAINS'])
         return output_df
+    
+    def handle_booking_input(bookings, small_restaurants=[1, 2, 3], seating_time=120):
+        #BUILD ME
+        small_restaurants_without_bookings = [x for x in small_restaurants if x not in bookings]
+        dt.timedelta(minutes=seating_time)
+        
+        pass
+
+    def set_relational_constraints(self):
+        variables = self.csp['VARIABLE'].values
+        for variable1 in variables:
+                for variable2 in variables:
+                    if variable1 < variable2:
+                        self.set_actor_changing_time_constraint(variable1, variable2)
+    
+    def set_actor_changing_time_constraint(self, variable1, variable2, minutes=30):
+        var1 = dt.datetime.strptime(variable1, '%H:%M')
+        var2 = dt.datetime.strptime(variable2, '%H:%M')
+        time_difference = abs(var1 - var2)
+        if time_difference < dt.timedelta(minutes=minutes):
+            all_domains = self.csp[self.csp["VARIABLE"] == variable1]['DOMAINS'].values[0]
+            actor_dict = {}
+            for domain in all_domains:
+                role_actor = self.mapping_df.iloc[domain]['role_actor']
+                for role in role_actor:
+                    if not role_actor[role] in actor_dict:
+                        actor_dict[role_actor[role]] = {}
+                    if not role in actor_dict[role_actor[role]]:
+                        actor_dict[role_actor[role]][role] = []
+                    actor_dict[role_actor[role]][role].append(domain)
+            for actor in actor_dict:
+                for current_role in actor_dict[actor]:
+                    current_domains = actor_dict[actor][current_role]
+                    other_roles = [role for role in actor_dict[actor] if role is not current_role]
+                    other_domains = [domains for role in other_roles for domains in actor_dict[actor][role]]
+                    self.addConstraint(lambda domain1, domain2, cur=current_domains, othr=other_domains:
+                                        not all([domain1 in cur, domain2 in othr]), (variable1, variable2))
+
 
 
 def format_output(output_df, scenes_df, restaurant_df, roles_df, actor_df):
@@ -92,7 +132,7 @@ def combine_solution(solution, input_df):
         output_df = pd.DataFrame(output_lst, columns=columns)
         return output_df
 
-def get_time_increment_data(time_slices, increment="00:15"):
+def get_time_increments(time_slices, increment="00:15"):
         td = dt.datetime.strptime(time_slices[0], '%H:%M')
         output = []
         inc = dt.datetime.strptime(increment, "%H:%M")
@@ -182,17 +222,20 @@ def get_valid_role_combinations(vr):
                 valid_role_combinations.append(combination)
         return valid_role_combinations
 
-def get_restaurants():
-        sqlcmd = """SELECT * from restaurants inner join restaurants_scenes on restaurants.id = restaurants_scenes.restaurant_id"""
-        with sqlite3.connect("db.sqlite") as conn:
-                rs = pd.read_sql(sqlcmd, conn)
-        rs = rs.groupby([
-                "restaurant_full_name",
-                "restaurant_short_name", 
-                "restaurant_seating",
-                "restaurant_id"
-                ])["scene_id"].apply(tuple).reset_index(name='scenes')
-        return rs            
+def get_restaurants(bookings, small_restaurants=[1, 2, 3]):
+    small_restaurants_without_bookings = tuple(x for x in small_restaurants if x not in bookings)
+    sqlcmd = """SELECT * from restaurants inner join restaurants_scenes 
+                on restaurants.id = restaurants_scenes.restaurant_id 
+                where restaurants.id not in {}""".format(str(small_restaurants_without_bookings))
+    with sqlite3.connect("db.sqlite") as conn:
+        rs = pd.read_sql(sqlcmd, conn)
+    rs = rs.groupby([
+        "restaurant_full_name",
+        "restaurant_short_name", 
+        "restaurant_seating",
+        "restaurant_id"
+        ])["scene_id"].apply(tuple).reset_index(name='scenes')
+    return rs            
 
 def find_valid_scenes(vrc, sdf):
         scene_id = tuple(sdf["id"])
@@ -242,38 +285,32 @@ if __name__ == '__main__':
         test_shift = {
         "increment": "00:15",
         "tours": ["14:30", "15:30", "16:30"],
-        "break_time": {"start": "16:00",
+        "break_time": { "start": "16:00",
                         "end": "16:25"},
-        "meal_times": {"KAT": ["14:00"],
-                        "LAU": ["14:00"],
-                        "VAR": ["12:00", "18:30"]},
-        "shifts": 
-        {"TK": {"start":"12:00",
-                "end":"21:00"},
-        "AH": {"start":"13:00",
-                "end":"21:00"},
-        "PA": {"start":"13:00",
-                "end":"19:00"},
-        "SS": {"start":"13:00",
-                "end":"21:00"},
-        "AU": {"start":"12:00",
-                "end":"21:00"},
-        "DS": {"start":"12:00",
-                "end":"19:00"},
-        }}
+        "bookings": {   1: ["14:00"],
+                        #2: ["14:00"],
+                        #3: ["12:00", "18:30"]
+                    },
+        "shifts": { "TK": { "start":"12:00",
+                            "end":"21:00"},
+                    "AH": { "start":"13:00",
+                            "end":"21:00"},
+                    "PA": { "start":"13:00",
+                            "end":"19:00"},
+                    "SS": { "start":"13:00",
+                            "end":"21:00"},
+                    "AU": { "start":"12:00",
+                            "end":"21:00"},
+                    "DS": { "start":"12:00",
+                            "end":"19:00"},
+                }
+        }
 
         if len(sys.argv) > 1:
                 test_shift = json.loads(sys.argv[1])
                 
-
-
         output = run_model(test_shift)
-        #sys.stdout.write(output)
-        #print(json.dumps(output, ensure_ascii=False))
-        #print(output)
-        #for key in output:
-        #        print(key, output[key])
-                #sys.stdoutwrite(key, output[key])
+
         if len(sys.argv) > 1:
                 print(json.dumps(output))
         else:
