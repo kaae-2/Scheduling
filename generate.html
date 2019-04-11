@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="styles.css">
     
 </head>
-<body onload="createTable()">
+<body onload="createTable();createBookingTable()">
   <br>
   <div class="container">
   <nav>
@@ -39,13 +39,14 @@
       </select>
   </p>
  <div class="container" id='cont'></div>
-
-
- <p><input type="button" class="btn btn-info" id="bt" value="Submit Data" onclick="submit()" /></p>
+  <br>
+ <div class="column">
+    <input type="button" class="btn btn-info" id="addRow" value="Add New Booking" onclick="addBookingRow()" />
+ <div class="container" id="booking"></div>
+  <br>
+ <p><input type="button" class="btn btn-info btn-block" id="bt" value="Submit Data" onclick="submit()" /></p>
   
-<div class="column">
-<div class="container" id="red"></div>
-<h1> Hello </h1>
+
 </div>
 </div>
 

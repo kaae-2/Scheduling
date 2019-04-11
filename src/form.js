@@ -1,6 +1,12 @@
 // ARRAY FOR HEADER.
-var headerArray = new Array();
-headerArray = ["Actor", "Start shift", "End shift", ""]; // SIMPLY ADD OR REMOVE VALUES IN THE ARRAY FOR TABLE HEADERS.
+var headerArray = ["Actor", "Start shift", "End shift", ""]; // SIMPLY ADD OR REMOVE VALUES IN THE ARRAY FOR TABLE HEADERS.
+var bookingArray = [
+  "Restaurant",
+  "Add Booking",
+  "Current Bookings",
+  "Remove Booking",
+  ""
+]; // SIMPLY ADD OR REMOVE VALUES IN THE ARRAY FOR TABLE HEADERS.
 
 const actors = {
   PA: "Pernille A",
@@ -12,6 +18,16 @@ const actors = {
   AU: "Peter",
   AA: "Asbjørn",
   SS: "Sune"
+};
+
+var bookingValues = {};
+const restaurants = {
+  1: "Varnæs",
+  2: "Lauras Køkken",
+  3: "Katrine",
+  4: "Jernbanen",
+  5: "Postgården",
+  6: "Algade"
 };
 
 const times = [
@@ -60,25 +76,22 @@ const times = [
 function runEngine(args) {
   const { PythonShell } = require("python-shell");
 
-  var path = require("path");
+  const path = require("path");
 
   var options = {
     scriptPath: path.join(__dirname, "/engine/"),
     //pythonPath: "/usr/local/bin/python3",
-    pythonPath:
-      "C:/Users/fkir0011/AppData/Local/Programs/Python/Python36-32/python.exe",
+    //pythonPath:"C:/Users/fkir0011/AppData/Local/Programs/Python/Python36-32/python.exe",
     encoding: "utf8",
-    mode: "json",
+    //mode: "json",
     args: JSON.stringify(args)
   };
   var constraint = new PythonShell("app.py", options);
-  //console.log(constraint);
-  //constraint.send(JSON.stringify(args));
+  console.log(constraint);
+
   constraint.on("message", message => {
-    //console.log(message);
+    console.log(message);
     output = message;
-    //console.log(output);
-    //output = JSON.parse(JSON.parse(JSON.stringify(String(message))));
   });
   constraint.end((err, code, message) => {
     console.log(output);
@@ -92,9 +105,7 @@ function runEngine(args) {
 function createTable() {
   var shiftTable = document.createElement("table");
   shiftTable.setAttribute("id", "shiftTable"); // SET THE TABLE ID.
-
   var tr = shiftTable.insertRow(-1);
-
   for (var h = 0; h < headerArray.length; h++) {
     var th = document.createElement("th"); // TABLE HEADER.
     th.innerHTML = headerArray[h];
@@ -180,9 +191,126 @@ function removeRow(oButton) {
   empTab.deleteRow(oButton.parentNode.parentNode.rowIndex); // BUTTON -> TD -> TR.
 }
 
+function createBookingTable() {
+  var shiftTable = document.createElement("table");
+  shiftTable.setAttribute("id", "bookingTable"); // SET THE TABLE ID.
+  var tr = shiftTable.insertRow(-1);
+  for (var h = 0; h < bookingArray.length; h++) {
+    var th = document.createElement("th"); // TABLE HEADER.
+    th.innerHTML = bookingArray[h];
+    tr.appendChild(th);
+  }
+
+  var div = document.getElementById("booking");
+  div.appendChild(shiftTable); // ADD THE TABLE TO YOUR WEB PAGE.
+  for (var i = 0; i < 2; i++) {
+    addBookingRow();
+  }
+}
+
+function addBookingRow() {
+  var empTab = document.getElementById("bookingTable");
+
+  var rowCnt = empTab.rows.length; // GET TABLE ROW COUNT.
+  var tr = empTab.insertRow(rowCnt); // TABLE ROW;
+  bookingValues[rowCnt] = [];
+  for (var c = 0; c < bookingArray.length; c++) {
+    var td = document.createElement("td"); // TABLE DEFINITION.
+    td = tr.insertCell(c);
+
+    if (c == bookingArray.length - 2) {
+      // LAST COLUMN.
+      // ADD A BUTTON.
+      var button = document.createElement("input");
+
+      // SET INPUT ATTRIBUTE.
+      button.setAttribute("type", "button");
+      button.setAttribute("value", "X");
+      button.setAttribute("class", "btn btn-danger");
+
+      // ADD THE BUTTON's 'onclick' EVENT.
+      button.setAttribute("onclick", "removeBooking(this)");
+      td.appendChild(button);
+    } else if (c == bookingArray.length - 1) {
+      // LAST COLUMN.
+      // ADD A BUTTON.
+      var button = document.createElement("input");
+
+      // SET INPUT ATTRIBUTE.
+      button.setAttribute("type", "button");
+      button.setAttribute("value", "Remove");
+      button.setAttribute("class", "btn btn-danger");
+
+      // ADD THE BUTTON's 'onclick' EVENT.
+      button.setAttribute("onclick", "removeBookingRow(this)");
+      td.appendChild(button);
+    } else if (c == 0) {
+      var ele = document.createElement("select");
+      ele.required = true;
+      options = "<select>";
+      options += "<option></option>";
+      for (var key in restaurants) {
+        options +=
+          '<option value="' + key + '">' + restaurants[key] + "</option>";
+      }
+      options += "</select>";
+      ele.innerHTML = options;
+      td.appendChild(ele);
+      // SET INDEX FOR TESTING
+      ele.selectedIndex = rowCnt;
+    } else if (c == 1) {
+      var ele = document.createElement("select");
+      options = "<select>";
+      for (var key in times) {
+        options +=
+          '<option value="' + times[key] + '">' + times[key] + "</option>";
+      }
+      options += "</select>";
+      ele.innerHTML = options;
+      ele.required = true;
+      ele.setAttribute("onchange", "addToBooking(this)");
+      //ele.setAttribute("multiple", true);
+      ele.selectedIndex = 1;
+      td.appendChild(ele);
+    } else if (c == 2) {
+      var ele = document.createElement("input");
+      ele.setAttribute("type", "text");
+      ele.setAttribute("disabled", true);
+      ele.value = "";
+      ele.required = true;
+      // SET INDEX FOR TESTING
+      td.appendChild(ele);
+    }
+  }
+}
+
+function addToBooking(change) {
+  var empTab = document.getElementById("bookingTable");
+  row = change.parentNode.parentNode.rowIndex; // BUTTON -> TD -> TR.
+  bookingValues[row].push(change.value);
+  empTab.rows[row].cells[2].getElementsByTagName(
+    "input"
+  )[0].value = bookingValues[row].join();
+}
+
+function removeBooking(change) {
+  var empTab = document.getElementById("bookingTable");
+  row = change.parentNode.parentNode.rowIndex; // BUTTON -> TD -> TR.
+  bookingValues[row].pop();
+  empTab.rows[row].cells[2].getElementsByTagName(
+    "input"
+  )[0].value = bookingValues[row].join();
+}
+
+function removeBookingRow(oButton) {
+  var empTab = document.getElementById("bookingTable");
+  empTab.deleteRow(oButton.parentNode.parentNode.rowIndex); // BUTTON -> TD -> TR.
+}
+
 // EXTRACT AND SUBMIT TABLE DATA.
 function submit() {
   var myTab = document.getElementById("shiftTable");
+  var myBooking = document.getElementById("bookingTable");
   var input = {};
   input["increment"] = document.getElementById("increment").value;
   // LOOP THROUGH EACH ROW OF THE TABLE.
@@ -212,6 +340,15 @@ function submit() {
   }
 
   input["shifts"] = act;
+  res = {};
+  for (row = 1; row < myBooking.rows.length; row++) {
+    var restaurant = myBooking.rows[row].cells[0].childNodes[0].value,
+      bookings = bookingValues[row];
+    if (bookings.length > 0) {
+      res[restaurant] = bookings;
+    }
+  }
+  input["bookings"] = res;
   console.log(input);
   runEngine(input);
 }

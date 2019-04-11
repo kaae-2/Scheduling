@@ -40,7 +40,8 @@ class ConstraintProblem(Problem):
         #Adding all the constraints. 
         self.addConstraint(AllDifferentConstraint())
         self.set_relational_constraints()
-        self.set_booking_constraints()
+        if len(self.booking_input) > 0:
+                self.set_booking_constraints()
               
     def initialize_variables(self):
         for _, i in self.csp.iterrows():
@@ -60,7 +61,6 @@ class ConstraintProblem(Problem):
     def set_booking_constraints(self, min_visits=2):
         for restaurant in self.booking_input:
             for booking in self.booking_input[restaurant]["booking"]:
-                #print((self.csp["VARIABLE"] > booking[0]) & (self.csp["VARIABLE"] <= booking[1]))
                 variables = self.csp[(self.csp["VARIABLE"] > booking[0]) & (self.csp["VARIABLE"] <= booking[1])]["VARIABLE"].values.tolist()
                 self.addConstraint(lambda *dom: sum([1 if x in self.booking_input[restaurant]["domains"] else 0 for x in dom]) >= min_visits and len(set(dom)) == len(dom), variables)
     
@@ -97,7 +97,7 @@ class ConstraintProblem(Problem):
         return pruned_domains 
     
     def get_booking_input(self, bookings, seating_minutes=120):
-        #output format: Dictionary = {
+        # output format: Dictionary = {
         # domains: list of domain indices, 
         # booking: list of lists of booking beginning and ending times
         # }
@@ -194,7 +194,6 @@ def get_time_increments(time_slices, increment="00:15"):
         return output
 
 def transform_scene_dict_to_df(input_dict, columns=['time', 'scene_id', 'restaurant_id', 'role_actor']):
-        #df = pd.DataFrame(data=None, columns=columns)
         lst = []
         for time in input_dict:
                 for scene_id in input_dict[time]:
@@ -338,20 +337,20 @@ if __name__ == '__main__':
         "tours": ["14:30", "15:30", "16:30"],
         "break_time": { "start": "16:00",
                         "end": "16:25"},
-        "bookings": {   1: ["14:00"],
-                        2: ["14:00"],
+        "bookings": {   #1: ["14:00"],
+                        #2: ["14:00"],
                         #3: ["12:00", "18:30"]
                     },
         "shifts": { "TK": { "start":"12:30",
-                            "end":"21:00"},
+                            "end":"19:00"},
                     "AH": { "start":"12:30",
-                            "end":"21:00"},
+                            "end":"19:00"},
                     "PA": { "start":"12:30",
                             "end":"19:00"},
                     "SS": { "start":"12:30",
-                            "end":"21:00"},
+                            "end":"19:00"},
                     "AU": { "start":"12:30",
-                            "end":"21:00"},
+                            "end":"19:00"},
                     "DS": { "start":"12:30",
                             "end":"19:00"},
                 }
