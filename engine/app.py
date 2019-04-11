@@ -31,44 +31,95 @@ class ConstraintProblem(Problem):
         super(ConstraintProblem, self).__init__()
         self.setSolver(MinConflictsSolver())
         self.mapping_df = input_df
-        self.csp = self.create_constraint_satisfaction_input(input_df, time_increments, bookings)
+        self.booking_input = self.get_booking_input(bookings)
+        self.csp = self.create_constraint_satisfaction_input(input_df, time_increments)
         self.initialize_variables()
         self.set_constraints() 
 
     def set_constraints(self):
+        #Adding all the constraints. 
         self.addConstraint(AllDifferentConstraint())
         self.set_relational_constraints()
-        # print('CONSTRAINTS ADDED')
-        pass
+        self.set_booking_constraints()
               
     def initialize_variables(self):
         for _, i in self.csp.iterrows():
             self.addVariable(i['VARIABLE'], i['DOMAINS'])
         
-    def create_constraint_satisfaction_input(self, df, time_increments, bookings):
+    def create_constraint_satisfaction_input(self, df, time_increments):
         all_domains = []
         time_slices = sorted(set(df['time']))
         for time in time_increments:
             a = max(x for x in time_slices if x <= time)
             valid_domains = df[df['time']==a].index.tolist()
-
-            all_domains.append([time, valid_domains])
+            pruned_domains = self.remove_domains_outside_booking_small_restaurants(time, valid_domains)
+            all_domains.append([time, pruned_domains])
         output_df = pd.DataFrame(all_domains, columns=['VARIABLE', 'DOMAINS'])
         return output_df
+
+    def set_booking_constraints(self, min_visits=2):
+        for restaurant in self.booking_input:
+            for booking in self.booking_input[restaurant]["booking"]:
+                #print((self.csp["VARIABLE"] > booking[0]) & (self.csp["VARIABLE"] <= booking[1]))
+                variables = self.csp[(self.csp["VARIABLE"] > booking[0]) & (self.csp["VARIABLE"] <= booking[1])]["VARIABLE"].values.tolist()
+                self.addConstraint(lambda *dom: sum([1 if x in self.booking_input[restaurant]["domains"] else 0 for x in dom]) >= min_visits and len(set(dom)) == len(dom), variables)
     
-    def handle_booking_input(bookings, small_restaurants=[1, 2, 3], seating_time=120):
-        #BUILD ME
-        small_restaurants_without_bookings = [x for x in small_restaurants if x not in bookings]
-        dt.timedelta(minutes=seating_time)
-        
-        pass
+    def set_unique_role_constraints(self, variable1, variable2, minutes=120):
+        var1 = dt.datetime.strptime(variable1, '%H:%M')
+        var2 = dt.datetime.strptime(variable2, '%H:%M')
+        time_difference = abs(var1 - var2)
+        if time_difference < dt.timedelta(minutes=minutes):
+            all_domains = self.csp[self.csp["VARIABLE"] == variable1]['DOMAINS'].values[0]
+            role_dict = {}
+            for domain in all_domains:
+                role_actor = self.mapping_df.iloc[domain]['role_actor']
+                for role in role_actor:
+                    if not role in role_dict:
+                        role_dict[role] = {}
+                    if not role_actor[role] in role_dict[role]:
+                        role_dict[role][role_actor[role]] = []
+                    role_dict[role][role_actor[role]].append(domain)
+            for role in role_dict:
+                for current_actor in role_dict[role]:
+                    current_domains = role_dict[role][current_actor]
+                    other_actors = [actor for actor in role_dict[role] if actor is not current_actor]
+                    other_domains = [domains for actor in other_actors for domains in role_dict[role][actor]]
+                    self.addConstraint(lambda domain1, domain2, cur=current_domains, othr=other_domains:
+                                        not all([domain1 in cur, domain2 in othr]), (variable1, variable2))
+
+
+    def remove_domains_outside_booking_small_restaurants(self, time, valid_domains, small_restaurants=[1, 2, 3]):
+        small_restaurants_with_booking = [x for x in small_restaurants if x in self.booking_input]
+        pruned_domains = valid_domains
+        for restaurant in small_restaurants_with_booking:
+            if all([time <= booking[0] or time > booking[1] for booking in self.booking_input[restaurant]["booking"]]):
+                pruned_domains = [x for x in pruned_domains if x not in self.booking_input[restaurant]["domains"]] 
+        return pruned_domains 
+    
+    def get_booking_input(self, bookings, seating_minutes=120):
+        #output format: Dictionary = {
+        # domains: list of domain indices, 
+        # booking: list of lists of booking beginning and ending times
+        # }
+        seating_time = dt.timedelta(minutes=seating_minutes)
+        booking_input = {}
+        for restaurant in bookings:
+            booking_input[restaurant] = {"domains": [], "booking": []}
+            booking_input[restaurant]["domains"] = self.mapping_df[self.mapping_df["restaurant_id"] == restaurant].index.tolist()
+            for booking in bookings[restaurant]:
+                begin = dt.datetime.strptime(booking, '%H:%M')
+                end = begin + seating_time
+                booking_input[restaurant]["booking"].append([begin.strftime('%H:%M'), end.strftime('%H:%M')])
+        return booking_input
 
     def set_relational_constraints(self):
+        # set constraints that are relevant between 2 time points. 
         variables = self.csp['VARIABLE'].values
         for variable1 in variables:
                 for variable2 in variables:
                     if variable1 < variable2:
                         self.set_actor_changing_time_constraint(variable1, variable2)
+                        self.set_unique_role_constraints(variable1, variable2)
     
     def set_actor_changing_time_constraint(self, variable1, variable2, minutes=30):
         var1 = dt.datetime.strptime(variable1, '%H:%M')
@@ -143,7 +194,7 @@ def get_time_increments(time_slices, increment="00:15"):
         return output
 
 def transform_scene_dict_to_df(input_dict, columns=['time', 'scene_id', 'restaurant_id', 'role_actor']):
-        df = pd.DataFrame(data=None, columns=columns)
+        #df = pd.DataFrame(data=None, columns=columns)
         lst = []
         for time in input_dict:
                 for scene_id in input_dict[time]:
@@ -204,7 +255,7 @@ def get_valid_scenes(scenes_df, roles_df, actor_df):
         
 def get_valid_roles(rdf, adf):
         actor_id = tuple(adf["id"])
-        sqlcmd = """SELECT * from actor_roles where actor_id in {}""".format(str(actor_id))
+        sqlcmd = """SELECT * from actor_roles where actor_id in {}""".format(str(actor_id).replace(",)", ")"))
         with sqlite3.connect("db.sqlite") as conn:
                 ar = pd.read_sql(sqlcmd, conn)
         return ar.groupby(["actor_id"])["role_id"].apply(tuple)
@@ -226,7 +277,7 @@ def get_restaurants(bookings, small_restaurants=[1, 2, 3]):
     small_restaurants_without_bookings = tuple(x for x in small_restaurants if x not in bookings)
     sqlcmd = """SELECT * from restaurants inner join restaurants_scenes 
                 on restaurants.id = restaurants_scenes.restaurant_id 
-                where restaurants.id not in {}""".format(str(small_restaurants_without_bookings))
+                where restaurants.id not in {}""".format(str(small_restaurants_without_bookings).replace(",)", ")"))
     with sqlite3.connect("db.sqlite") as conn:
         rs = pd.read_sql(sqlcmd, conn)
     rs = rs.groupby([
@@ -239,7 +290,7 @@ def get_restaurants(bookings, small_restaurants=[1, 2, 3]):
 
 def find_valid_scenes(vrc, sdf):
         scene_id = tuple(sdf["id"])
-        sqlcmd = """SELECT * from roles_scenes where scene_id in {}""".format(str(scene_id))
+        sqlcmd = """SELECT * from roles_scenes where scene_id in {}""".format(str(scene_id).replace(",)", ")"))
         with sqlite3.connect("db.sqlite") as conn:
                 rs = pd.read_sql(sqlcmd, conn)
         rs = rs.groupby(["scene_id"])["role_id"].apply(tuple)
@@ -276,7 +327,7 @@ def get_time_slices(shift):
 def get_actor_df(shift):
     with sqlite3.connect("db.sqlite") as conn:
         actors_on_staff = tuple([x for x in shift])
-        sqlcmd = "SELECT * from actors where actor_initials in {}".format(str(actors_on_staff))
+        sqlcmd = "SELECT * from actors where actor_initials in {}".format(str(actors_on_staff).replace(",)", ")"))
         return pd.read_sql(sqlcmd, conn)
 
 if __name__ == '__main__':
@@ -288,20 +339,20 @@ if __name__ == '__main__':
         "break_time": { "start": "16:00",
                         "end": "16:25"},
         "bookings": {   1: ["14:00"],
-                        #2: ["14:00"],
+                        2: ["14:00"],
                         #3: ["12:00", "18:30"]
                     },
-        "shifts": { "TK": { "start":"12:00",
+        "shifts": { "TK": { "start":"12:30",
                             "end":"21:00"},
-                    "AH": { "start":"13:00",
+                    "AH": { "start":"12:30",
                             "end":"21:00"},
-                    "PA": { "start":"13:00",
+                    "PA": { "start":"12:30",
                             "end":"19:00"},
-                    "SS": { "start":"13:00",
+                    "SS": { "start":"12:30",
                             "end":"21:00"},
-                    "AU": { "start":"12:00",
+                    "AU": { "start":"12:30",
                             "end":"21:00"},
-                    "DS": { "start":"12:00",
+                    "DS": { "start":"12:30",
                             "end":"19:00"},
                 }
         }
@@ -312,8 +363,10 @@ if __name__ == '__main__':
         output = run_model(test_shift)
 
         if len(sys.argv) > 1:
-                print(json.dumps(output))
+            print(json.dumps(output))
         else:
-                print(json.dumps(output, ensure_ascii=False))
+            for key in output:
+                print(key, output[key])
+            #print(json.dumps(output, ensure_ascii=False))
 
         #print(str(output))
