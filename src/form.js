@@ -21,6 +21,7 @@ const actors = {
 };
 
 var bookingValues = {};
+
 const restaurants = {
   1: "Varnæs",
   2: "Lauras Køkken",
@@ -77,13 +78,14 @@ function runEngine(args) {
   const { PythonShell } = require("python-shell");
 
   const path = require("path");
-
+  let output = new Object();
   var options = {
     scriptPath: path.join(__dirname, "/engine/"),
     //pythonPath: "/usr/local/bin/python3",
-    //pythonPath:"C:/Users/fkir0011/AppData/Local/Programs/Python/Python36-32/python.exe",
+    pythonPath:
+      "C:/Users/fkir0011/AppData/Local/Programs/Python/Python36-32/python.exe",
     encoding: "utf8",
-    //mode: "json",
+    mode: "json",
     args: JSON.stringify(args)
   };
   var constraint = new PythonShell("app.py", options);
@@ -94,9 +96,12 @@ function runEngine(args) {
     output = message;
   });
   constraint.end((err, code, message) => {
-    console.log(output);
-    localStorage.setItem("output", JSON.stringify(output));
-    window.open("schedule.html");
+    if (Object.entries(output).length === 0 && output.constructor === Object) {
+      console.log("Couldn't find solution based on input");
+    } else {
+      localStorage.setItem("output", JSON.stringify(output));
+      window.open("schedule.html");
+    }
   });
 }
 

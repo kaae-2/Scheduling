@@ -41,7 +41,7 @@ class ConstraintProblem(Problem):
         self.addConstraint(AllDifferentConstraint())
         self.set_relational_constraints()
         if len(self.booking_input) > 0:
-                self.set_booking_constraints()
+            self.set_booking_constraints()
               
     def initialize_variables(self):
         for _, i in self.csp.iterrows():
@@ -61,10 +61,11 @@ class ConstraintProblem(Problem):
     def set_booking_constraints(self, min_visits=2):
         for restaurant in self.booking_input:
             for booking in self.booking_input[restaurant]["booking"]:
+                #print((self.csp["VARIABLE"] > booking[0]) & (self.csp["VARIABLE"] <= booking[1]))
                 variables = self.csp[(self.csp["VARIABLE"] > booking[0]) & (self.csp["VARIABLE"] <= booking[1])]["VARIABLE"].values.tolist()
                 self.addConstraint(lambda *dom: sum([1 if x in self.booking_input[restaurant]["domains"] else 0 for x in dom]) >= min_visits and len(set(dom)) == len(dom), variables)
     
-    def set_unique_role_constraints(self, variable1, variable2, minutes=120):
+    def set_role_rotation_constraints(self, variable1, variable2, minutes=120):
         var1 = dt.datetime.strptime(variable1, '%H:%M')
         var2 = dt.datetime.strptime(variable2, '%H:%M')
         time_difference = abs(var1 - var2)
@@ -86,7 +87,32 @@ class ConstraintProblem(Problem):
                     other_domains = [domains for actor in other_actors for domains in role_dict[role][actor]]
                     self.addConstraint(lambda domain1, domain2, cur=current_domains, othr=other_domains:
                                         not all([domain1 in cur, domain2 in othr]), (variable1, variable2))
-
+    
+    def set_scene_rotation_constraints(self, variable1, variable2, minutes=120):
+        #BUILD ME
+        var1 = dt.datetime.strptime(variable1, '%H:%M')
+        var2 = dt.datetime.strptime(variable2, '%H:%M')
+        time_difference = abs(var1 - var2)
+        if time_difference < dt.timedelta(minutes=minutes):
+            all_domains = self.csp[self.csp["VARIABLE"] == variable1]['DOMAINS'].values[0]
+            scene_dict = {}
+            for domain in all_domains:
+                scenes = self.mapping_df.iloc[domain]['scene_id']
+                for scene in scenes:
+                    print(scene)
+                    #if not scene in scene_dict:
+                        #scene_dict[role] = {}
+                    #if not role_actor[role] in role_dict[role]:
+                    #    role_dict[role][role_actor[role]] = []
+                    #role_dict[role][role_actor[role]].append(domain)
+                    #print(scene_dict)
+            #for role in role_dict:
+            #    for current_actor in role_dict[role]:
+            #        current_domains = role_dict[role][current_actor]
+            #        other_actors = [actor for actor in role_dict[role] if actor is not current_actor]
+            #        other_domains = [domains for actor in other_actors for domains in role_dict[role]#[actor]]
+            #        self.addConstraint(lambda domain1, domain2, cur=current_domains, #othr=other_domains:
+            #                            not all([domain1 in cur, domain2 in othr]), (variable1, variable2))
 
     def remove_domains_outside_booking_small_restaurants(self, time, valid_domains, small_restaurants=[1, 2, 3]):
         small_restaurants_with_booking = [x for x in small_restaurants if x in self.booking_input]
@@ -97,7 +123,7 @@ class ConstraintProblem(Problem):
         return pruned_domains 
     
     def get_booking_input(self, bookings, seating_minutes=120):
-        # output format: Dictionary = {
+        #output format: Dictionary = {
         # domains: list of domain indices, 
         # booking: list of lists of booking beginning and ending times
         # }
@@ -119,7 +145,8 @@ class ConstraintProblem(Problem):
                 for variable2 in variables:
                     if variable1 < variable2:
                         self.set_actor_changing_time_constraint(variable1, variable2)
-                        self.set_unique_role_constraints(variable1, variable2)
+                        self.set_role_rotation_constraints(variable1, variable2)
+                        self.set_scene_rotation_constraints(variable1, variable2)
     
     def set_actor_changing_time_constraint(self, variable1, variable2, minutes=30):
         var1 = dt.datetime.strptime(variable1, '%H:%M')
@@ -194,6 +221,7 @@ def get_time_increments(time_slices, increment="00:15"):
         return output
 
 def transform_scene_dict_to_df(input_dict, columns=['time', 'scene_id', 'restaurant_id', 'role_actor']):
+        #df = pd.DataFrame(data=None, columns=columns)
         lst = []
         for time in input_dict:
                 for scene_id in input_dict[time]:
@@ -333,39 +361,46 @@ if __name__ == '__main__':
         os.chdir(os.path.dirname(sys.argv[0]))
         
         test_shift = {
-        "increment": "00:15",
+        "increment": "00:30",
         "tours": ["14:30", "15:30", "16:30"],
         "break_time": { "start": "16:00",
                         "end": "16:25"},
         "bookings": {   #1: ["14:00"],
-                        #2: ["14:00"],
+                        2: ["14:00"],
                         #3: ["12:00", "18:30"]
                     },
-        "shifts": { "TK": { "start":"12:30",
-                            "end":"19:00"},
-                    "AH": { "start":"12:30",
-                            "end":"19:00"},
-                    "PA": { "start":"12:30",
-                            "end":"19:00"},
-                    "SS": { "start":"12:30",
-                            "end":"19:00"},
-                    "AU": { "start":"12:30",
-                            "end":"19:00"},
-                    "DS": { "start":"12:30",
-                            "end":"19:00"},
+        "shifts": { "TK": { "start":"12:15",
+                            "end":"20:00"},
+                    "PP": { "start":"12:15",
+                            "end":"20:00"},
+                    "PA": { "start":"12:15",
+                            "end":"20:00"},
+                    "SS": { "start":"12:15",
+                            "end":"20:00"},
+                    #"AU": { "start":"12:15",
+                    #        "end":"21:00"},
+                    #"DS": { "start":"12:15",
+                    #        "end":"19:00"},
                 }
         }
 
         if len(sys.argv) > 1:
-                test_shift = json.loads(sys.argv[1])
+            test_shift = json.loads(sys.argv[1])
+            #print(test_shift)
                 
         output = run_model(test_shift)
 
         if len(sys.argv) > 1:
+            """ if output == None:
+                pass
+            else: """
             print(json.dumps(output))
         else:
-            for key in output:
-                print(key, output[key])
+            if output == None:
+                print("Couldn't find solutions.")
+            else:
+                for key in output:
+                    print(key, output[key])
             #print(json.dumps(output, ensure_ascii=False))
 
         #print(str(output))
