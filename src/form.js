@@ -82,8 +82,8 @@ function runEngine(args) {
   var options = {
     scriptPath: path.join(__dirname, "/engine/"),
     //pythonPath: "/usr/local/bin/python3",
-    pythonPath:
-      "C:/Users/fkir0011/AppData/Local/Programs/Python/Python36-32/python.exe",
+    //pythonPath:
+    //  "C:/Users/fkir0011/AppData/Local/Programs/Python/Python36-32/python.exe",
     encoding: "utf8",
     mode: "json",
     args: JSON.stringify(args)

@@ -146,7 +146,7 @@ class ConstraintProblem(Problem):
                     if variable1 < variable2:
                         self.set_actor_changing_time_constraint(variable1, variable2)
                         self.set_role_rotation_constraints(variable1, variable2)
-                        self.set_scene_rotation_constraints(variable1, variable2)
+                        #self.set_scene_rotation_constraints(variable1, variable2)
     
     def set_actor_changing_time_constraint(self, variable1, variable2, minutes=30):
         var1 = dt.datetime.strptime(variable1, '%H:%M')
