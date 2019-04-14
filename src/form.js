@@ -17,7 +17,9 @@ const actors = {
   TK: "Thomas",
   AU: "Peter",
   AA: "Asbjørn",
-  SS: "Sune"
+  SS: "Sune",
+  HJ: "Henrik",
+  MH: "Michael"
 };
 
 var bookingValues = {};
