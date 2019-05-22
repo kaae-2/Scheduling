@@ -1,6 +1,6 @@
 {
     "python.linting.pylintEnabled": true,
-    "python.pythonPath": "C:\\Program Files (x86)\\Python37-32\\python.exe",
+    "python.pythonPath": "C:\\Users\\fkir0011\\AppData\\Local\\Programs\\Python\\Python37\\python.exe",
     "git.ignoreLimitWarning": true,
     "python.formatting.provider": "autopep8",
     "python.linting.enabled": false

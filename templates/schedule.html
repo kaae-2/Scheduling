@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+      integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T"
+      crossorigin="anonymous"
+    />
+    <link
+      rel="stylesheet"
+      href="https://use.fontawesome.com/releases/v5.8.1/css/all.css"
+      integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf"
+      crossorigin="anonymous"
+    />
+
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <meta http-equiv="Content-type" content="text/html;charset=UTF-8" />
+    <script type="text/javascript" src="{{ url_for('static', filename = 'src/schedule.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename = 'src/makePDF.js') }}"></script>
+    <title>Schedule Output</title>
+  </head>
+  <body onload="createOutputTable()">
+    <div class="container">
+      <div class="tab">
+        <button class="tablinks" onclick="openTab(event, 'restaurant')">
+          Restaurant View
+        </button>
+        <button class="tablinks" onclick="openTab(event, 'actor')">
+          Actor View
+        </button>
+      </div>
+      <p>Output</p>
+      <button
+        class="btn btn-submit"
+        onClick="makePDF('outputRes');makePDF('outputAct')"
+      >
+        Save as pdf
+      </button>
+      <div id="restaurant" class="tabcontent">
+        <div class="container" id="outputRes"></div>
+      </div>
+      <div id="actor" class="tabcontent">
+        <div class="container" id="outputAct"></div>
+      </div>
+    </div>
+  </body>
+</html>

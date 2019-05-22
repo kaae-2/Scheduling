@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+  <head>
+      <meta charset="UTF-8">
+    <title>Korsbæk</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
+    <script type="text/javascript" src="{{ url_for('static', filename = 'src/form.js') }}"></script>
+    <link rel="stylesheet" href="static/styles.css">
+    
+</head>
+<body onload="createTable();createBookingTable()">
+  <br>
+  <div class="container">
+  <nav>
+    <div class="nav-wrapper">
+      <a class="brand-logo center"><h1>Korsbæk</h1></a>   
+    </div>
+  </nav>
+</div>
+  <br>
+
+  <div class="container">
+    <button class="btn btn-info"><a style="color:white" href="/">< Back</a></button>
+    <div class="jumbotron">
+      <h1>Korsbæk Vagtplan generator</h1>
+      <h2>Powered by Python</h2>
+      <p>Rendered by HTML and JavaScript</p>
+    </div>
+    <br>
+  
+ <div class="column">
+    <p>
+      <input type="button" class="btn btn-info" id="addRow" value="Add New Row" onclick="addRow()" />
+      <span> Increments: </span>
+      <select id='increment'>
+        <option value='00:15'>15 min</option>
+        <option value='00:30' selected>30 min</option>
+      </select>
+  </p>
+ <div class="container" id='cont'></div>
+  <br>
+ <div class="column">
+    <input type="button" class="btn btn-info" id="addRow" value="Add New Booking" onclick="addBookingRow()" />
+ <div class="container" id="booking"></div>
+  <br>
+ <p><input type="button" class="btn btn-info btn-block" id="bt" value="Submit Data" onclick="submit()" /></p>
+  
+
+</div>
+</div>
+
+
+</body>
+</html>

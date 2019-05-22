@@ -76,7 +76,7 @@ const times = [
   "21:45"
 ];
 
-function runEngine(args) {
+/* function runEngine(args) {
   const { PythonShell } = require("python-shell");
 
   const path = require("path");
@@ -105,7 +105,7 @@ function runEngine(args) {
       window.open("schedule.html");
     }
   });
-}
+} */
 
 // FIRST CREATE A TABLE STRUCTURE BY ADDING A FEW HEADERS AND
 // ADD THE TABLE TO YOUR WEB PAGE.
@@ -357,5 +357,15 @@ function submit() {
   }
   input["bookings"] = res;
   console.log(input);
-  runEngine(input);
+  fetch("/engine", {
+    method: "POST",
+    body: JSON.stringify(input),
+    headers: {
+      "Content-Type": "application/json"
+    }
+  })
+    .then(res => res.json())
+    .then(response => console.log("success: ", JSON.stringify(response)))
+    .catch(err => console.log(err));
+  //runEngine(input);
 }

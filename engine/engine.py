@@ -361,12 +361,12 @@ if __name__ == '__main__':
         os.chdir(os.path.dirname(sys.argv[0]))
         
         test_shift = {
-        "increment": "00:30",
+        "increment": "00:15",
         "tours": ["14:30", "15:30", "16:30"],
         "break_time": { "start": "16:00",
                         "end": "16:25"},
         "bookings": {   #1: ["14:00"],
-                        2: ["14:00"],
+                        #2: ["14:00"],
                         #3: ["12:00", "18:30"]
                     },
         "shifts": { "TK": { "start":"12:15",
